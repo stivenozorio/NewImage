@@ -1,0 +1,95 @@
+name: Deploy New Image Construction & Remodeling
+
+# Publica la rama `main` en newimageremodeling.co en cada push. Sitio
+# estático (HTML/CSS/JS, sin build step): se sube tal cual por FTPS a la
+# raíz del dominio en el hosting (dominio principal de esa cuenta →
+# "public_html/").
+#
+# Requisitos (ya configurados por el usuario):
+#   - Secrets del repo (Settings → Secrets and variables → Actions):
+#       FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-newimage
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar el sitio antes de publicar
+        run: |
+          set -euo pipefail
+          for f in index.html services/index.html work/index.html about/index.html contact/index.html css/styles.css js/main.js; do
+            test -f "$f" || { echo "::error::falta $f"; exit 1; }
+          done
+          grep -q "info@newimageremodeling.co" index.html \
+            || { echo "::error::falta el email correcto en index.html"; exit 1; }
+          echo "Validación OK: $(find . -type f -not -path './.git/*' | wc -l) archivos."
+
+      - name: Preparar solo los archivos del sitio (sin .git ni .github)
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          git ls-files | grep -vE '^\.github/' | tar -cf - -T - | tar -xf - -C _site
+          echo "Preparados: $(find _site -type f | wc -l) archivos."
+          test ! -e _site/.git
+          test ! -e _site/.github
+
+      - name: Publicar por FTPS
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_TARGET_DIR: ${{ vars.FTP_TARGET_DIR || '.' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FTP_SERVER}" ] || [ -z "${FTP_USERNAME}" ] || [ -z "${FTP_PASSWORD}" ]; then
+            echo "::error::Faltan los secrets FTP_SERVER / FTP_USERNAME / FTP_PASSWORD en este repositorio (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          for attempt in 1 2 3; do
+            if lftp -u "${FTP_USERNAME},${FTP_PASSWORD}" \
+              -e "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 5; set cmd:fail-exit no; mirror -R --verbose _site/ ${FTP_TARGET_DIR}; cd ${FTP_TARGET_DIR}; rm -rf .git; rm -rf .github; set cmd:fail-exit yes; bye" \
+              "${FTP_SERVER}"; then
+              exit 0
+            fi
+            echo "Intento ${attempt} falló, reintentando en 10s..."
+            sleep 10
+          done
+          exit 1
+
+      - name: Verificar el sitio en vivo
+        run: |
+          set -uo pipefail
+          sleep 45
+          conectado=false
+          for attempt in 1 2 3 4 5; do
+            if curl -sSf --connect-timeout 20 --max-time 40 https://newimageremodeling.co/ -o page.html; then
+              conectado=true
+              break
+            fi
+            echo "Intento ${attempt}: no se pudo conectar; reintento en 30s..."
+            sleep 30
+          done
+
+          if [ "${conectado}" != true ]; then
+            echo "::warning::No se pudo conectar con newimageremodeling.co desde el runner tras 5 intentos. La subida terminó bien; queda sin comprobar si el sitio en vivo ya refleja este despliegue."
+            exit 0
+          fi
+
+          if grep -qiE "please wait while your request is being verified|one moment, please" page.html; then
+            echo "::warning::El hosting mostró una pantalla de espera/anti-bot en vez del sitio real. Esto NO significa que el deploy haya fallado — verificá manualmente en un navegador si tenés dudas."
+            exit 0
+          fi
+
+          grep -q "From Concept" page.html \
+            || { echo "::error::newimageremodeling.co no refleja este despliegue"; head -c 2000 page.html; exit 1; }
+          echo "Confirmado: newimageremodeling.co refleja este despliegue."
