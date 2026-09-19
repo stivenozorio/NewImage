@@ -42,6 +42,24 @@ jobs:
           test ! -e _site/.git
           test ! -e _site/.github
 
+      # El .htaccess cachea CSS y JS un mes. Si el HTML cambia de estructura
+      # y el ?v= no, el navegador mezcla HTML nuevo con CSS/JS viejos y la
+      # pagina se rompe. Sellar con el SHA hace que cada deploy tenga una
+      # clave de cache propia, asi HTML y assets nunca se desincronizan.
+      - name: Sellar los assets con el SHA del commit
+        run: |
+          set -euo pipefail
+          STAMP="${GITHUB_SHA::12}"
+          mapfile -t PAGES < <(find _site -name '*.html')
+          test "${#PAGES[@]}" -gt 0
+          sed -i -E "s#(/css/styles\.css|/js/main\.js)\?v=[^\"']*#\1?v=${STAMP}#g" "${PAGES[@]}"
+          # Ninguna pagina puede quedar sin sellar.
+          for f in "${PAGES[@]}"; do
+            grep -qF "styles.css?v=${STAMP}" "$f" || { echo "::error::sin sellar: $f"; exit 1; }
+            grep -qF "main.js?v=${STAMP}" "$f" || { echo "::error::sin sellar: $f"; exit 1; }
+          done
+          echo "Sellado con ?v=${STAMP}: ${#PAGES[@]} paginas."
+
       - name: Publicar por FTPS
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -92,4 +110,27 @@ jobs:
 
           grep -q "From Concept" page.html \
             || { echo "::error::newimageremodeling.co no refleja este despliegue"; head -c 2000 page.html; exit 1; }
+
+          # El HTML en vivo tiene que apuntar al CSS/JS de ESTE commit. Si no,
+          # los visitantes mezclan HTML nuevo con assets cacheados viejos.
+          STAMP="${GITHUB_SHA::12}"
+          if grep -q "styles.css?v=${STAMP}" page.html; then
+            echo "Assets sellados correctamente con ?v=${STAMP}."
+          else
+            echo "::error::El HTML en vivo no referencia los assets de este commit (?v=${STAMP})."
+            grep -o -E '(styles\.css|main\.js)\?v=[^"]*' page.html | sort -u
+            exit 1
+          fi
+
+          # El scroll del hero depende de peticiones por rango sobre el mp4.
+          # Sin 206 el video se queda clavado en el primer fotograma.
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' -r 0-99 \
+            --connect-timeout 20 --max-time 40 \
+            https://newimageremodeling.co/assets/video/hero-wide.mp4 || echo "000")
+          if [ "${codigo}" = "206" ]; then
+            echo "El hosting responde peticiones por rango (206) en los mp4."
+          else
+            echo "::warning::El mp4 devolvio ${codigo} en vez de 206 para una peticion por rango. Si el video del hero no avanza con el scroll, la causa es esta."
+          fi
+
           echo "Confirmado: newimageremodeling.co refleja este despliegue."
