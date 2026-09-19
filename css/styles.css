@@ -3,11 +3,14 @@
    ============================================================ */
 
 :root{
+  --void:#0a0908;
   --ink:#141210;
   --ink-soft:#262220;
   --charcoal:#3a3532;
   --orange:#e2842d;
   --orange-deep:#c96a1a;
+  --gold:#f0b54a;
+  --ember:#8e3a1f;
   --tan:#e2c6b7;
   --tan-deep:#d4ac96;
   --cream:#f7f3ee;
@@ -96,10 +99,18 @@ button{ font-family:inherit; cursor:pointer; }
   transition:background .3s var(--ease), backdrop-filter .3s var(--ease);
 }
 .site-header.is-scrolled::before{
-  background:rgba(20,18,16,.94);
-  backdrop-filter:blur(10px);
+  background:rgba(14,12,10,.72);
+  backdrop-filter:blur(16px) saturate(140%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid rgba(246,241,234,.09);
 }
-.site-header.is-scrolled{ padding:.6rem 1.75rem; }
+.site-header.is-scrolled{ padding:.55rem 1.75rem; }
+.site-header.is-scrolled .logo img{ height:38px; }
+.logo img{ transition:height .3s var(--ease); }
+
+/* Over the cinematic hero the header stays weightless — the film's own
+   top scrim carries the contrast, so no panel is needed. */
+.site-header.is-over-hero::before{ background:rgba(20,18,16,0); backdrop-filter:none; border-bottom-color:transparent; }
 
 .logo{ display:flex; align-items:center; gap:.6rem; z-index:2; }
 .logo img{ height:46px; width:auto; }
@@ -147,28 +158,301 @@ button{ font-family:inherit; cursor:pointer; }
   .main-nav .nav-cta{ margin-top:1rem; }
 }
 
-/* ---------------- Hero ---------------- */
-.hero{
-  position:relative; min-height:100svh; display:flex; align-items:flex-end;
-  background:var(--ink); color:var(--white); overflow:clip;
+/* ============================================================
+   CINEMATIC HERO — scroll-scrubbed video sequence
+   Base rules below describe the STATIC fallback (no JS, reduced
+   motion, save-data). `.is-cinema` upgrades it to the sticky,
+   scroll-driven experience; JS adds that class only when safe.
+   ============================================================ */
+.hero-cinema{
+  --hero-track:520svh;
+  --hero-pan:20%;          /* object-position Y, driven by JS   */
+  --hero-fg:#f6f1ea;
+  position:relative;
+  background:var(--void);
+  color:var(--hero-fg);
+  isolation:isolate;
 }
-.hero-media{ position:absolute; inset:0; z-index:0; }
-.hero-media img{ width:100%; height:100%; object-fit:cover; }
-.hero-media::after{
+.hero-stage{ position:relative; }
+
+/* ---- skip link ---- */
+.hero-skip{
+  position:absolute; top:5.2rem; left:50%; transform:translate(-50%,-460%);
+  z-index:40; padding:.7rem 1.2rem; background:var(--white); color:var(--ink);
+  font-family:var(--font-head); font-size:.78rem; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; border-radius:2px;
+  transition:transform .25s var(--ease);
+}
+.hero-skip:focus-visible{ transform:translate(-50%,0); }
+
+/* ---- media layer ---- */
+.hero-media{
+  position:sticky; top:0; z-index:0;
+  height:100svh; height:100dvh;
+  overflow:clip; background:var(--void);
+}
+.hero-still{ position:absolute; inset:0; display:block; }
+.hero-still img,
+.hero-video{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover;
+}
+.hero-video{ object-position:50% var(--hero-pan); }
+.hero-still img{ object-position:50% var(--hero-pan-still, 6%); }
+.hero-video{
+  z-index:1; opacity:0; border:0; background:transparent;
+  transition:opacity .9s var(--ease);
+}
+.hero-cinema.is-video-ready .hero-video{ opacity:1; }
+.hero-cinema.is-video-failed .hero-video{ display:none; }
+
+/* Readability without drowning the footage: a light top scrim for the
+   header, a heavier bottom scrim for the copy, plus a soft vignette. */
+.hero-scrim{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+.hero-scrim::before{
   content:''; position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(10,9,7,.35) 0%, rgba(10,9,7,.35) 40%, rgba(10,9,7,.9) 100%);
+  background:
+    linear-gradient(180deg, rgba(10,9,8,.58) 0%, rgba(10,9,8,.16) 18%, rgba(10,9,8,0) 34%),
+    linear-gradient(0deg, rgba(10,9,8,.88) 0%, rgba(10,9,8,.55) 22%, rgba(10,9,8,.12) 46%, rgba(10,9,8,0) 62%);
 }
-.hero-content{ position:relative; z-index:1; padding:8rem 1.5rem 5rem; max-width:var(--container-w); margin:0 auto; width:100%; }
-.hero-eyebrow{
-  font-family:var(--font-head);
-  font-size:.8rem; letter-spacing:.22em; text-transform:uppercase; color:var(--orange);
-  font-weight:600; margin-bottom:1.2rem;
+.hero-scrim::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(130% 92% at 50% 42%, rgba(10,9,8,0) 42%, rgba(10,9,8,.5) 100%);
 }
+.hero-grain{
+  position:absolute; inset:0; z-index:3; pointer-events:none;
+  opacity:.055; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+/* ---- chapters ---- */
+.hero-chapters{ position:relative; z-index:4; margin-top:-100svh; }
+.hero-chapter{
+  display:flex; align-items:flex-end; min-height:76svh;
+}
+.hero-chapter-inner{
+  width:100%; max-width:var(--container-w); margin:0 auto;
+  padding:0 1.5rem 7vh;
+}
+
+.hero-kicker{
+  display:flex; align-items:center; gap:.75rem;
+  font-family:var(--font-head); font-size:.76rem; font-weight:600;
+  letter-spacing:.24em; text-transform:uppercase;
+  color:var(--gold); margin-bottom:1.5rem;
+}
+.hero-kicker::after{
+  content:''; flex:0 0 auto; width:44px; height:1px;
+  background:linear-gradient(90deg, var(--orange), rgba(226,132,45,0));
+}
+.hero-index{ color:rgba(246,241,234,.5); font-variant-numeric:tabular-nums; }
+
+.hero-wordmark{ color:var(--hero-fg); display:block; margin:0; }
+.hero-wordmark-a,
+.hero-wordmark-b{ display:block; }
+.hero-wordmark-a{
+  font-size:clamp(3rem,7.4vw,6.4rem); line-height:.94; letter-spacing:-.005em;
+}
+.hero-wordmark-b{
+  font-size:clamp(.92rem,1.68vw,1.5rem); font-weight:500;
+  letter-spacing:.34em; color:rgba(246,241,234,.78); margin-top:1rem;
+}
+.hero-tagline{
+  font-family:var(--font-head); font-size:clamp(1rem,1.5vw,1.3rem);
+  letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+  margin-top:1.6rem;
+}
+.hero-lede{
+  font-size:clamp(.95rem,1.15vw,1.08rem); color:rgba(246,241,234,.72);
+  max-width:46ch; margin-top:1.4rem;
+}
+
 .hero-title{
-  font-size:clamp(2.6rem,6vw,4.6rem); max-width:18ch; color:var(--white);
+  color:var(--hero-fg);
+  font-size:clamp(3.2rem,9vw,8rem); line-height:.9; letter-spacing:-.01em;
 }
-.hero-sub{ font-size:1.15rem; max-width:48ch; margin-top:1.3rem; color:#e9e0d3; font-family:var(--font-body); text-transform:none; }
-.hero-actions{ display:flex; gap:1rem; margin-top:2.2rem; flex-wrap:wrap; }
+.hero-title--sm{ font-size:clamp(2.2rem,5.4vw,4.6rem); line-height:.98; }
+.hero-line{
+  font-size:clamp(1rem,1.45vw,1.35rem); color:rgba(246,241,234,.82);
+  max-width:40ch; margin-top:1.5rem; line-height:1.5;
+}
+
+.hero-services{
+  display:flex; flex-wrap:wrap; gap:.6rem 2.4rem; margin-top:1.8rem;
+}
+.hero-services a{
+  display:inline-block; position:relative; padding:.25rem 0;
+  font-family:var(--font-head); font-weight:600;
+  font-size:clamp(1.1rem,2.1vw,1.9rem); letter-spacing:.06em; text-transform:uppercase;
+  color:rgba(246,241,234,.86);
+  transition:color .25s var(--ease);
+}
+.hero-services a::after{
+  content:''; position:absolute; left:0; bottom:0; width:0; height:1px;
+  background:var(--orange); transition:width .3s var(--ease);
+}
+.hero-services a:hover{ color:var(--white); }
+.hero-services a:hover::after{ width:100%; }
+
+.hero-actions{ display:flex; gap:1rem; margin-top:2.4rem; flex-wrap:wrap; }
+
+/* ---- chapter rail ---- */
+.hero-rail{ display:none; }
+.hero-rail ol{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.2rem; }
+.hero-rail button{
+  display:flex; align-items:center; gap:.8rem;
+  padding:.45rem 0; background:none; border:0; color:inherit;
+}
+.hero-rail-bar{
+  display:block; width:26px; height:2px; flex:0 0 auto;
+  background:rgba(246,241,234,.28); transition:width .3s var(--ease), background .3s var(--ease);
+}
+.hero-rail-text{
+  font-family:var(--font-head); font-size:.68rem; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(246,241,234,.45);
+  transition:color .3s var(--ease);
+}
+.hero-rail button:hover .hero-rail-bar{ background:rgba(246,241,234,.6); }
+.hero-rail button:hover .hero-rail-text{ color:rgba(246,241,234,.85); }
+.hero-rail li.is-current .hero-rail-bar{ width:42px; background:var(--orange); }
+.hero-rail li.is-current .hero-rail-text{ color:var(--hero-fg); }
+
+/* ---- scroll cue ---- */
+.hero-cue{ display:none; }
+.hero-cue-line{
+  display:block; width:1px; height:44px; overflow:hidden;
+  background:rgba(246,241,234,.22); position:relative;
+}
+.hero-cue-line::after{
+  content:''; position:absolute; left:0; top:-44px; width:1px; height:44px;
+  background:linear-gradient(180deg, rgba(226,132,45,0), var(--orange));
+  animation:heroCue 2.6s var(--ease) infinite;
+}
+@keyframes heroCue{ 0%{ transform:translateY(0);} 60%,100%{ transform:translateY(88px);} }
+
+/* ============================================================
+   CINEMA MODE — enabled by JS
+   ============================================================ */
+.hero-cinema.is-cinema{ height:var(--hero-track); }
+.is-cinema .hero-stage{
+  position:sticky; top:0;
+  height:100svh; height:100dvh;
+  overflow:clip;
+}
+.is-cinema .hero-media{ position:absolute; inset:0; height:auto; }
+.is-cinema .hero-chapters{ position:absolute; inset:0; margin:0; }
+.is-cinema .hero-chapter{
+  position:absolute; inset:0; min-height:0;
+  opacity:0; pointer-events:none;
+  transform-origin:0 100%;
+  will-change:opacity, transform, filter;
+  backface-visibility:hidden;
+}
+.is-cinema .hero-chapter.is-off{ visibility:hidden; }
+.is-cinema .hero-chapter.is-live{ pointer-events:auto; }
+.is-cinema .hero-chapter-inner{ padding-bottom:12vh; }
+
+.is-cinema .hero-rail{
+  display:block; position:absolute; z-index:6;
+  right:max(1.75rem, calc((100% - var(--container-w)) / 2 + 1.5rem));
+  top:50%; transform:translateY(-50%);
+}
+.is-cinema .hero-cue{
+  display:flex; flex-direction:column; align-items:center; gap:.9rem;
+  position:absolute; z-index:6; left:50%; bottom:2.2rem; transform:translateX(-50%);
+  font-family:var(--font-head); font-size:.68rem; font-weight:600;
+  letter-spacing:.24em; text-transform:uppercase; color:rgba(246,241,234,.5);
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+.is-cinema.is-cue-off .hero-cue{ opacity:0; transform:translate(-50%,12px); pointer-events:none; }
+
+/* Buffering hint while the first seconds stream in */
+.is-cinema .hero-media::after{
+  content:''; position:absolute; z-index:5; left:0; right:0; bottom:0; height:2px;
+  background:linear-gradient(90deg, var(--orange), var(--gold));
+  transform:scaleX(0); transform-origin:0 50%;
+  opacity:0; transition:opacity .4s var(--ease);
+}
+.is-cinema.is-buffering .hero-media::after{ opacity:.8; animation:heroBuf 1.4s var(--ease) infinite; }
+@keyframes heroBuf{ 0%{transform:scaleX(0);} 50%{transform:scaleX(.7);} 100%{transform:scaleX(1); opacity:0;} }
+
+/* ---- responsive ---- */
+@media (max-width:900px){
+  .hero-cinema{ --hero-track:480svh; }
+  /* A side rail would sit straight on top of the film's own lock-up, so
+     narrow screens get a segmented bar along the bottom edge instead. */
+  .is-cinema .hero-rail{
+    right:auto; left:1.35rem; top:auto; bottom:1.5rem; transform:none;
+  }
+  .hero-rail ol{ flex-direction:row; gap:.45rem; }
+  .hero-rail button{ padding:.6rem 0; }
+  .hero-rail-text{
+    position:absolute; width:1px; height:1px; margin:-1px;
+    padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  .hero-rail-bar{ width:26px; }
+  .hero-rail li.is-current .hero-rail-bar{ width:26px; height:2px; }
+  /* lift the cue clear of the bottom rail */
+  .is-cinema .hero-cue{ bottom:4.4rem; gap:.7rem; }
+  .hero-cue-line{ height:28px; }
+  .is-cinema .hero-chapter-inner{ padding-bottom:5.6rem; }
+  .hero-chapter-inner{ padding-left:1.35rem; padding-right:1.35rem; }
+}
+
+/* Portrait viewports show the full vertical composition, in which the
+   film already renders the logo lock-up. Keep the <h1> for search and
+   assistive tech, but don't print the same words twice on screen. */
+@media (max-aspect-ratio: 29/20){
+  .hero-wordmark,
+  .hero-tagline{
+    position:absolute; width:1px; height:1px; margin:-1px;
+    padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  .hero-chapter--intro .hero-lede{
+    font-size:clamp(1.02rem,4.1vw,1.3rem); line-height:1.45;
+    color:var(--hero-fg); max-width:24ch; margin-top:0;
+  }
+}
+
+@media (max-width:560px){
+  .hero-title{ font-size:clamp(2.2rem,12.5vw,4.4rem); }
+  .hero-title--sm{ font-size:clamp(2rem,9vw,2.8rem); }
+  .hero-services{ gap:.35rem 1.6rem; }
+  .hero-actions{ gap:.7rem; }
+  .hero-actions .btn{ flex:1 1 100%; }
+}
+
+/* ---- static fallback polish ---- */
+.hero-cinema:not(.is-cinema) .hero-chapter:first-child{ min-height:100svh; }
+.hero-cinema:not(.is-cinema) .hero-chapter{
+  padding-top:6vh;
+  background:linear-gradient(180deg, rgba(10,9,8,0), rgba(10,9,8,.55));
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hero-cue-line::after{ animation:none; }
+  .is-cinema .hero-chapter{ transition:none; }
+}
+
+/* ============================================================
+   HERO → PAGE BRIDGE
+   Carries the film's darkness into the first editorial section so
+   the two worlds read as one continuous scroll.
+   ============================================================ */
+.hero-outro{
+  position:relative; text-align:center;
+  padding:clamp(6rem,14vh,10rem) 0 clamp(6rem,13vh,9rem);
+  background:linear-gradient(180deg, var(--void) 0%, #0d0b09 44%, #241d16 70%, #7d6c58 90%, var(--cream) 100%);
+}
+.hero-outro .eyebrow{ color:var(--gold); justify-content:center; }
+.hero-outro .eyebrow::before{ background:var(--orange); }
+.hero-outro-statement{
+  font-family:var(--font-head); text-transform:none; font-weight:500;
+  font-size:clamp(1.6rem,3.6vw,2.6rem); line-height:1.4;
+  max-width:20ch; margin:1.4rem auto 0; color:#f2ece3;
+}
+.hero-outro-statement .orange{ color:var(--orange); }
 
 /* ---------------- Data-animate ---------------- */
 [data-animate]{
@@ -183,16 +467,6 @@ button{ font-family:inherit; cursor:pointer; }
 @media (prefers-reduced-motion: reduce){
   [data-animate]{ opacity:1; transform:none; transition:none; }
 }
-
-/* ---------------- Brand statement ---------------- */
-.statement{
-  text-align:center; padding:5rem 0;
-}
-.statement p{
-  font-family:var(--font-head); text-transform:none; font-size:clamp(1.4rem,3vw,2.1rem);
-  line-height:1.5; max-width:22ch; margin:0 auto; color:var(--ink-soft);
-}
-.statement .orange{ color:var(--orange-deep); }
 
 /* ---------------- Cards / Grids ---------------- */
 .grid{ display:grid; gap:1.75rem; }

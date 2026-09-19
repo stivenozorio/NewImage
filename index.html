@@ -17,7 +17,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/css/styles.css?v=1" />
+<link rel="preload" as="image" href="/assets/video/hero-poster-portrait.webp" media="(max-aspect-ratio: 29/20)" />
+<link rel="preload" as="image" href="/assets/video/hero-poster-wide.webp" media="(min-aspect-ratio: 29/20)" />
+<link rel="stylesheet" href="/css/styles.css?v=2" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -54,24 +56,107 @@
   </nav>
 </header>
 
-<section class="hero">
-  <div class="hero-media">
-    <img src="/assets/images/gallery/kitchens/kitchen-03.webp" alt="Custom kitchen remodel with waterfall marble island by New Image Construction & Remodeling" />
-  </div>
-  <div class="hero-content">
-    <p class="hero-eyebrow">South Florida &amp; Treasure Coast</p>
-    <h1 class="hero-title">From Concept<br>To Creation.</h1>
-    <p class="hero-sub">Custom kitchens, bathrooms, closets, flooring, and whole-home remodeling — built around your style, your space, and your life.</p>
-    <div class="hero-actions">
-      <a href="/contact/" class="btn btn-solid">Schedule a Free Estimate</a>
-      <a href="/work/" class="btn btn-light">View Our Work</a>
+<section class="hero-cinema" id="hero" data-hero aria-label="New Image Construction &amp; Remodeling — cinematic introduction">
+  <a class="hero-skip" href="#philosophy">Skip the intro</a>
+
+  <div class="hero-stage">
+
+    <div class="hero-media">
+      <picture class="hero-still">
+        <source media="(min-aspect-ratio: 29/20)" srcset="/assets/video/hero-poster-wide.webp" width="1080" height="1000" />
+        <img src="/assets/video/hero-poster-portrait.webp" width="720" height="1280" fetchpriority="high" decoding="async"
+             alt="Architectural blueprints, a tape measure and framing timber on a work table at dusk — the beginning of a New Image Construction &amp; Remodeling project." />
+      </picture>
+      <video class="hero-video" data-hero-video muted playsinline preload="auto"
+             disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
+      <div class="hero-scrim" aria-hidden="true"></div>
+      <div class="hero-grain" aria-hidden="true"></div>
     </div>
+
+    <div class="hero-chapters">
+
+      <article class="hero-chapter hero-chapter--intro" data-chapter data-from="0" data-to="0.15">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker">South Florida &amp; Treasure Coast</p>
+          <h1 class="hero-wordmark">
+            <span class="hero-wordmark-a">New Image</span>
+            <span class="hero-wordmark-b">Construction &amp; Remodeling</span>
+          </h1>
+          <p class="hero-tagline">From Concept To Creation</p>
+          <p class="hero-lede">Custom kitchens, bathrooms, closets, flooring and whole-home transformations.</p>
+        </div>
+      </article>
+
+      <article class="hero-chapter" data-chapter data-from="0.15" data-to="0.35">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker"><span class="hero-index">01</span> Concept</p>
+          <h2 class="hero-title">Concept</h2>
+          <p class="hero-line">Every great project begins with an idea.</p>
+        </div>
+      </article>
+
+      <article class="hero-chapter" data-chapter data-from="0.35" data-to="0.55">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker"><span class="hero-index">02</span> Build</p>
+          <h2 class="hero-title">Build</h2>
+          <p class="hero-line">Precision, craftsmanship and attention to detail.</p>
+        </div>
+      </article>
+
+      <article class="hero-chapter" data-chapter data-from="0.55" data-to="0.75">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker"><span class="hero-index">03</span> Transform</p>
+          <h2 class="hero-title">Transform</h2>
+          <p class="hero-line">Turning structures into extraordinary spaces.</p>
+        </div>
+      </article>
+
+      <article class="hero-chapter" data-chapter data-from="0.75" data-to="0.9">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker">What We Build</p>
+          <h2 class="hero-title hero-title--sm">Our Services</h2>
+          <ul class="hero-services">
+            <li><a href="/services/">Renovations</a></li>
+            <li><a href="/services/">Construction</a></li>
+            <li><a href="/services/">Remodeling</a></li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hero-chapter" data-chapter data-from="0.9" data-to="1">
+        <div class="hero-chapter-inner">
+          <p class="hero-kicker">Get In Touch</p>
+          <h2 class="hero-title hero-title--sm">Let&rsquo;s Build Together</h2>
+          <p class="hero-line">Tell us about your space — we&rsquo;ll bring it to life.</p>
+          <div class="hero-actions">
+            <a href="/contact/" class="btn btn-solid">Schedule a Free Estimate</a>
+            <a href="/work/" class="btn btn-light">View Our Work</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <nav class="hero-rail" aria-label="Introduction chapters">
+      <ol>
+        <li><button type="button" data-hero-jump="0"><span class="hero-rail-bar"></span><span class="hero-rail-text">Intro</span></button></li>
+        <li><button type="button" data-hero-jump="1"><span class="hero-rail-bar"></span><span class="hero-rail-text">Concept</span></button></li>
+        <li><button type="button" data-hero-jump="2"><span class="hero-rail-bar"></span><span class="hero-rail-text">Build</span></button></li>
+        <li><button type="button" data-hero-jump="3"><span class="hero-rail-bar"></span><span class="hero-rail-text">Transform</span></button></li>
+        <li><button type="button" data-hero-jump="4"><span class="hero-rail-bar"></span><span class="hero-rail-text">Services</span></button></li>
+        <li><button type="button" data-hero-jump="5"><span class="hero-rail-bar"></span><span class="hero-rail-text">Contact</span></button></li>
+      </ol>
+    </nav>
+
+    <p class="hero-cue" aria-hidden="true"><span class="hero-cue-line"></span>Scroll to enter</p>
+
   </div>
 </section>
 
-<section class="statement section">
+<section class="hero-outro" id="philosophy" tabindex="-1">
   <div class="container">
-    <p data-animate>Your remodeling dream, <span class="orange">brought to life.</span></p>
+    <p class="eyebrow" data-animate>Our Philosophy</p>
+    <p class="hero-outro-statement" data-animate data-animate-delay="1">Your remodeling dream, <span class="orange">brought to life.</span></p>
   </div>
 </section>
 
@@ -147,7 +232,7 @@
 <section class="section" style="background:var(--ink); color:var(--white);">
   <div class="container about-block">
     <div data-animate>
-      <img src="/assets/images/gallery/kitchens/kitchen-03.webp" alt="Custom kitchen island remodel by New Image Construction & Remodeling" />
+      <img src="/assets/images/gallery/kitchens/kitchen-03.webp" alt="Custom kitchen island remodel by New Image Construction &amp; Remodeling" loading="lazy" decoding="async" />
     </div>
     <div data-animate data-animate-delay="1">
       <p class="eyebrow" style="color:var(--orange);">About Us</p>
@@ -207,6 +292,6 @@
   </div>
 </footer>
 
-<script src="/js/main.js?v=1"></script>
+<script src="/js/main.js?v=2"></script>
 </body>
 </html>
