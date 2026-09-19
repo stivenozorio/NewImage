@@ -56,12 +56,9 @@
   </nav>
 </header>
 
-<section class="hero-cinema" id="hero" data-hero aria-label="New Image Construction &amp; Remodeling — cinematic introduction">
-  <a class="hero-skip" href="#philosophy">Skip the intro</a>
+<div class="cinema" data-cinema>
 
-  <div class="hero-stage">
-
-    <div class="hero-media">
+  <div class="hero-media">
       <picture class="hero-still">
         <source media="(min-aspect-ratio: 29/20)" srcset="/assets/video/hero-poster-wide.webp" width="1080" height="1000" />
         <img src="/assets/video/hero-poster-portrait.webp" width="720" height="1280" fetchpriority="high" decoding="async"
@@ -71,7 +68,12 @@
              disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="hero-grain" aria-hidden="true"></div>
-    </div>
+  </div>
+
+  <section class="hero-cinema" id="hero" data-hero aria-label="New Image Construction &amp; Remodeling — cinematic introduction">
+  <a class="hero-skip" href="#philosophy">Skip the intro</a>
+
+  <div class="hero-stage">
 
     <div class="hero-chapters">
 
@@ -151,14 +153,16 @@
     <p class="hero-cue" aria-hidden="true"><span class="hero-cue-line"></span>Scroll to enter</p>
 
   </div>
-</section>
+  </section>
 
-<section class="hero-outro" id="philosophy" tabindex="-1">
-  <div class="container">
-    <p class="eyebrow" data-animate>Our Philosophy</p>
-    <p class="hero-outro-statement" data-animate data-animate-delay="1">Your remodeling dream, <span class="orange">brought to life.</span></p>
-  </div>
-</section>
+  <section class="hero-outro" id="philosophy" tabindex="-1">
+    <div class="container">
+      <p class="eyebrow" data-animate>Our Philosophy</p>
+      <p class="hero-outro-statement" data-animate data-animate-delay="1">Your remodeling dream, <span class="orange">brought to life.</span></p>
+    </div>
+  </section>
+
+</div>
 
 <section class="section" id="services" style="padding-top:0;">
   <div class="container">

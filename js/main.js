@@ -35,16 +35,18 @@
   /* ---------- Header scroll state ---------- */
   const header = document.querySelector(".site-header");
   const heroEl = document.querySelector("[data-hero]");
+  const cinemaEl = document.querySelector("[data-cinema]");
   if (header) {
     let lastScrolled = null;
     let lastOverHero = null;
     onScrollTask(() => {
       // Over a cinematic hero the header stays weightless until the film
       // is nearly done; elsewhere it solidifies as soon as you move.
-      const heroEnd = heroEl ? heroEl.offsetTop + heroEl.offsetHeight : 0;
+      const act = cinemaEl || heroEl;
+      const actEnd = act ? act.offsetTop + act.offsetHeight : 0;
       const y = window.scrollY;
-      const overHero = heroEl ? y < heroEnd - window.innerHeight * 0.55 : false;
-      const scrolled = overHero ? false : y > (heroEl ? heroEnd - window.innerHeight : 40);
+      const overHero = act ? y < actEnd - window.innerHeight * 0.75 : false;
+      const scrolled = overHero ? false : y > (act ? actEnd - window.innerHeight : 40);
       if (scrolled !== lastScrolled) {
         lastScrolled = scrolled;
         header.classList.toggle("is-scrolled", scrolled);
@@ -60,8 +62,8 @@
   /* ============================================================
      Cinematic hero — the scroll position *is* the video timeline.
      ============================================================ */
-  const initCinematicHero = (hero) => {
-    const video = hero.querySelector("[data-hero-video]");
+  const initCinematicHero = (hero, cinema) => {
+    const video = cinema.querySelector("[data-hero-video]");
     const stage = hero.querySelector(".hero-stage");
     const railItems = Array.from(hero.querySelectorAll(".hero-rail li"));
     const chapters = Array.from(hero.querySelectorAll("[data-chapter]")).map((el) => ({
@@ -82,7 +84,7 @@
     }
     chapters[0].isFirst = true;
     chapters[chapters.length - 1].isLast = true;
-    hero.classList.add("is-cinema");
+    cinema.classList.add("is-cinema");
 
     /* ---- sources -----------------------------------------------------
        Two encodes, both all-intra so any frame can be decoded on its own:
@@ -94,9 +96,31 @@
        `top`/`height` describe each file's slice of the original 1920px
        frame, so the pan maths can talk in source coordinates.
     -------------------------------------------------------------------- */
+    // `curve` maps scroll progress to a fraction of the clip's duration.
+    // A linear map would spend the first 40% of the scroll on the opening
+    // seconds, which carry only 11% of the footage's movement — two screens
+    // of scrolling for almost no motion. These tables are built from the
+    // clip's measured frame-to-frame movement (65% motion-equalised, 35%
+    // linear), so the pace stays roughly even from top to bottom while each
+    // chapter still lands on the scene it was written for.
     const SOURCES = {
-      wide: { src: "/assets/video/hero-wide.mp4", top: 64 / 1920, height: 1000 / 1920, w: 1080, h: 1000 },
-      portrait: { src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280 }
+      wide: {
+        src: "/assets/video/hero-wide.mp4", top: 64 / 1920, height: 1000 / 1920, w: 1080, h: 1000,
+        curve: [0, 0.2044, 0.2869, 0.3342, 0.376, 0.4152, 0.4517, 0.4881, 0.5246, 0.5665,
+                0.6083, 0.6475, 0.6813, 0.7177, 0.7542, 0.7906, 0.8325, 0.869, 0.9054, 0.9419, 1]
+      },
+      portrait: {
+        src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280,
+        curve: [0, 0.2119, 0.309, 0.3648, 0.4077, 0.4475, 0.4874, 0.5208, 0.5574, 0.5908,
+                0.6275, 0.6704, 0.7102, 0.75, 0.7867, 0.8201, 0.8535, 0.8901, 0.9236, 0.9634, 1]
+      }
+    };
+
+    const timeFraction = (p) => {
+      const c = SOURCES[mode].curve;
+      const x = clamp(p, 0, 1) * (c.length - 1);
+      const i = Math.min(Math.floor(x), c.length - 2);
+      return c[i] + (c[i + 1] - c[i]) * (x - i);
     };
     const WIDE_RATIO = 1.45;
     let mode = null;
@@ -105,7 +129,7 @@
       const next = window.innerWidth / window.innerHeight >= WIDE_RATIO ? "wide" : "portrait";
       if (next === mode) return false;
       mode = next;
-      hero.classList.remove("is-video-ready");
+      cinema.classList.remove("is-video-ready");
       video.src = SOURCES[mode].src;
       video.load();
       return true;
@@ -117,13 +141,14 @@
        tilts down into the framing, then lifts to the finished house —
        and never crosses the rows where the film burns in its own titles.
     -------------------------------------------------------------------- */
-    const bandCenter = (p) => {
-      if (p <= 0.45) return 0.219;
-      if (p <= 0.7) return 0.219 + ((p - 0.45) / 0.25) * (0.39 - 0.219);
-      return 0.39 + ((p - 0.7) / 0.3) * (0.281 - 0.39);
+    const bandCenter = (tf) => {
+      if (tf <= 0.45) return 0.219;
+      if (tf <= 0.7) return 0.219 + ((tf - 0.45) / 0.25) * (0.39 - 0.219);
+      return 0.39 + ((tf - 0.7) / 0.3) * (0.281 - 0.39);
     };
 
-    const panPercent = (p) => {
+    // `tf` is a fraction of the clip's duration, not of the scroll.
+    const panPercent = (tf) => {
       const src = SOURCES[mode];
       const vw = video.videoWidth || src.w;
       const vh = video.videoHeight || src.h;
@@ -134,7 +159,7 @@
       const renderedH = vh * (boxW / vw);
       if (renderedH <= boxH + 1) return 50;
       const visible = boxH / renderedH; // fraction of the file that fits
-      const centerInFile = (bandCenter(p) - src.top) / src.height;
+      const centerInFile = (bandCenter(tf) - src.top) / src.height;
       return clamp((centerInFile - visible / 2) / (1 - visible), 0, 1) * 100;
     };
 
@@ -166,7 +191,7 @@
       const duration = video.duration;
       if (!isFinite(duration) || duration <= 0) return true;
       // The last frame is not addressable at exactly `duration`.
-      let t = clamp(p * duration, 0, duration - 0.05);
+      let t = clamp(timeFraction(p) * duration, 0, duration - 0.05);
 
       // Asking for a frame that has not downloaded yet blanks the poster,
       // so hold at the edge of what is buffered and say so.
@@ -174,7 +199,7 @@
       if (!ready) t = bufferedCeiling(t);
       if (!ready !== buffering) {
         buffering = !ready;
-        hero.classList.toggle("is-buffering", buffering);
+        cinema.classList.toggle("is-buffering", buffering);
       }
 
       if (Math.abs(video.currentTime - t) < 0.02) return true;
@@ -252,49 +277,70 @@
     /* ---- the loop ----------------------------------------------------- */
     let targetP = 0;
     let easedP = 0;
+    let targetC = 0;
+    let easedC = 0;
     let lastRail = -1;
     let cueHidden = null;
     const EASE_K = 0.16;
 
+    // The film runs for the whole act (hero + the philosophy line that
+    // follows); the chapters only run for the hero. Two progress values,
+    // one measurement — the wrapper and the hero share a top edge.
     const readProgress = () => {
-      const range = hero.offsetHeight - stage.offsetHeight;
-      if (range <= 0) return 0;
-      return clamp(-hero.getBoundingClientRect().top / range, 0, 1);
+      const scrolled = -cinema.getBoundingClientRect().top;
+      const stageH = stage.offsetHeight;
+      const filmRange = cinema.offsetHeight - stageH;
+      const heroRange = hero.offsetHeight - stageH;
+      return {
+        film: filmRange > 0 ? clamp(scrolled / filmRange, 0, 1) : 0,
+        chapter: heroRange > 0 ? clamp(scrolled / heroRange, 0, 1) : 0
+      };
     };
 
     // The poster is frame one of the film, lock-up and all, so it keeps the
     // opening framing rather than travelling with the camera.
     const setStillPan = () => {
-      hero.style.setProperty("--hero-pan-still", panPercent(0).toFixed(2) + "%");
+      cinema.style.setProperty("--hero-pan-still", panPercent(0).toFixed(2) + "%");
     };
 
-    const paint = (p) => {
-      const videoSettled = scrub(p);
-      hero.style.setProperty("--hero-pan", panPercent(p).toFixed(2) + "%");
+    const paint = (film, chapter) => {
+      const videoSettled = scrub(film);
+      const tf = timeFraction(film);
+      cinema.style.setProperty("--hero-pan", panPercent(tf).toFixed(2) + "%");
+      // A slow dolly-out across the calm opening, so something is always
+      // moving even before the footage picks up.
+      const zoom = 1 + 0.08 * (1 - ease(ramp(film, 0, 0.35)));
+      cinema.style.setProperty("--hero-zoom", zoom.toFixed(4));
+      // Dissolve the chapters as the philosophy line takes over.
+      stage.style.opacity = (1 - ramp(chapter, 0.955, 1)).toFixed(3);
 
-      const lead = paintChapters(p);
+      const lead = paintChapters(chapter);
       if (lead !== lastRail) {
         if (railItems[lastRail]) railItems[lastRail].classList.remove("is-current");
         if (railItems[lead]) railItems[lead].classList.add("is-current");
         lastRail = lead;
       }
 
-      const hideCue = p > 0.03;
+      const hideCue = film > 0.03;
       if (hideCue !== cueHidden) {
         cueHidden = hideCue;
-        hero.classList.toggle("is-cue-off", hideCue);
+        cinema.classList.toggle("is-cue-off", hideCue);
       }
       return videoSettled;
     };
 
     onScrollTask(() => {
-      targetP = readProgress();
+      const now = readProgress();
+      targetP = now.film;
+      targetC = now.chapter;
       // Ease towards the scroll position so a flick of the wheel plays as
       // a glide rather than a jump — and settles exactly on target.
       easedP += (targetP - easedP) * EASE_K;
+      easedC += (targetC - easedC) * EASE_K;
       if (Math.abs(targetP - easedP) < 0.0002) easedP = targetP;
-      const videoSettled = paint(easedP);
-      return easedP !== targetP || !videoSettled;
+      if (Math.abs(targetC - easedC) < 0.0002) easedC = targetC;
+      const videoSettled = paint(easedP, easedC);
+      return easedP !== targetP || easedC !== targetC || !videoSettled;
     });
 
     const invalidate = requestFrame;
@@ -307,7 +353,7 @@
     video.addEventListener("progress", requestFrame, { passive: true });
     video.addEventListener("seeked", requestFrame, { passive: true });
     video.addEventListener("loadeddata", () => {
-      hero.classList.add("is-video-ready");
+      cinema.classList.add("is-video-ready");
       // iOS will not paint a frame from a video that has never played, so
       // prime the decoder once and stop again immediately.
       const started = video.play();
@@ -320,8 +366,8 @@
     });
     video.addEventListener("error", () => {
       // The poster stays, the copy stays, the scroll still works.
-      hero.classList.add("is-video-failed");
-      hero.classList.remove("is-buffering");
+      cinema.classList.add("is-video-failed");
+      cinema.classList.remove("is-buffering");
     });
 
     let resizeTimer = null;
@@ -344,7 +390,7 @@
         const range = hero.offsetHeight - stage.offsetHeight;
         const mid = c.from + (c.to - c.from) * 0.5;
         window.scrollTo({
-          top: hero.offsetTop + range * mid,
+          top: cinema.offsetTop + range * mid,
           behavior: motionQuery.matches ? "auto" : "smooth"
         });
       });
@@ -355,7 +401,7 @@
     invalidate();
   };
 
-  if (heroEl) initCinematicHero(heroEl);
+  if (heroEl && cinemaEl) initCinematicHero(heroEl, cinemaEl);
 
   /* ---------- Mobile nav ---------- */
   const menuToggle = document.querySelector(".menu-toggle");

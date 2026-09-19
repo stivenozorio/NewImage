@@ -164,15 +164,21 @@ button{ font-family:inherit; cursor:pointer; }
    motion, save-data). `.is-cinema` upgrades it to the sticky,
    scroll-driven experience; JS adds that class only when safe.
    ============================================================ */
-.hero-cinema{
+/* The film runs behind the hero AND the philosophy line that follows it,
+   so the sticky media layer belongs to this wrapper rather than the hero. */
+.cinema{
   --hero-track:520svh;
-  --hero-pan:20%;          /* object-position Y, driven by JS   */
+  --hero-outro:90svh;
+  --hero-pan:20%;          /* object-position Y,  driven by JS  */
+  --hero-pan-still:6%;
+  --hero-zoom:1;           /* slow push, driven by JS           */
   --hero-fg:#f6f1ea;
   position:relative;
   background:var(--void);
   color:var(--hero-fg);
   isolation:isolate;
 }
+.hero-cinema{ position:relative; z-index:1; margin-top:-100vh; margin-top:-100dvh; }
 .hero-stage{ position:relative; }
 
 /* ---- skip link ---- */
@@ -188,7 +194,7 @@ button{ font-family:inherit; cursor:pointer; }
 /* ---- media layer ---- */
 .hero-media{
   position:sticky; top:0; z-index:0;
-  height:100svh; height:100dvh;
+  height:100vh; height:100dvh;
   overflow:clip; background:var(--void);
 }
 .hero-still{ position:absolute; inset:0; display:block; }
@@ -198,13 +204,18 @@ button{ font-family:inherit; cursor:pointer; }
   object-fit:cover;
 }
 .hero-video{ object-position:50% var(--hero-pan); }
-.hero-still img{ object-position:50% var(--hero-pan-still, 6%); }
+.hero-still img{ object-position:50% var(--hero-pan-still); }
+/* A slow push keeps the frame alive through the calm opening seconds, where
+   the footage itself barely moves. Zoom only ever crops tighter than the
+   computed band, so it cannot expose the film's burned-in lock-up. */
+.hero-still img,
+.hero-video{ transform:scale(var(--hero-zoom)); transform-origin:50% 50%; }
 .hero-video{
   z-index:1; opacity:0; border:0; background:transparent;
   transition:opacity .9s var(--ease);
 }
-.hero-cinema.is-video-ready .hero-video{ opacity:1; }
-.hero-cinema.is-video-failed .hero-video{ display:none; }
+.is-video-ready .hero-video{ opacity:1; }
+.is-video-failed .hero-video{ display:none; }
 
 /* Readability without drowning the footage: a light top scrim for the
    header, a heavier bottom scrim for the copy, plus a soft vignette. */
@@ -226,7 +237,7 @@ button{ font-family:inherit; cursor:pointer; }
 }
 
 /* ---- chapters ---- */
-.hero-chapters{ position:relative; z-index:4; margin-top:-100svh; }
+.hero-chapters{ position:relative; z-index:4; }
 .hero-chapter{
   display:flex; align-items:flex-end; min-height:76svh;
 }
@@ -334,13 +345,22 @@ button{ font-family:inherit; cursor:pointer; }
 /* ============================================================
    CINEMA MODE — enabled by JS
    ============================================================ */
-.hero-cinema.is-cinema{ height:var(--hero-track); }
+.is-cinema .hero-cinema{ height:var(--hero-track); }
+/* The philosophy line scrolls over the still-running film, then dissolves
+   the whole act into the cream page. */
+.is-cinema .hero-outro{
+  position:relative; z-index:1;
+  min-height:var(--hero-outro);
+  display:flex; align-items:center;
+  background:linear-gradient(180deg,
+    rgba(10,9,8,0) 0%, rgba(10,9,8,.30) 26%, rgba(10,9,8,.78) 52%,
+    #1a1510 72%, #4a3f33 86%, #9c8a72 95%, var(--cream) 100%);
+}
 .is-cinema .hero-stage{
   position:sticky; top:0;
   height:100svh; height:100dvh;
   overflow:clip;
 }
-.is-cinema .hero-media{ position:absolute; inset:0; height:auto; }
 .is-cinema .hero-chapters{ position:absolute; inset:0; margin:0; }
 .is-cinema .hero-chapter{
   position:absolute; inset:0; min-height:0;
@@ -424,8 +444,8 @@ button{ font-family:inherit; cursor:pointer; }
 }
 
 /* ---- static fallback polish ---- */
-.hero-cinema:not(.is-cinema) .hero-chapter:first-child{ min-height:100svh; }
-.hero-cinema:not(.is-cinema) .hero-chapter{
+.cinema:not(.is-cinema) .hero-chapter:first-child{ min-height:100svh; }
+.cinema:not(.is-cinema) .hero-chapter{
   padding-top:6vh;
   background:linear-gradient(180deg, rgba(10,9,8,0), rgba(10,9,8,.55));
 }
