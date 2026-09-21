@@ -37,10 +37,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          git ls-files | grep -vE '^\.github/' | tar -cf - -T - | tar -xf - -C _site
+          git ls-files | grep -vE '^(\.github|tools)/' | tar -cf - -T - | tar -xf - -C _site
           echo "Preparados: $(find _site -type f | wc -l) archivos."
           test ! -e _site/.git
           test ! -e _site/.github
+          test ! -e _site/tools
 
       # El .htaccess cachea CSS y JS un mes. Si el HTML cambia de estructura
       # y el ?v= no, el navegador mezcla HTML nuevo con CSS/JS viejos y la

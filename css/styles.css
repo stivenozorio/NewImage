@@ -856,3 +856,91 @@ textarea{ resize:vertical; min-height:140px; }
 .svc-readmore a:hover{ color:var(--ink); border-bottom-color:var(--orange); }
 .section-title a{ transition:color .25s var(--ease); }
 .section-title a:hover{ color:var(--orange-deep); }
+
+/* ============================================================
+   SERVICES DROPDOWN
+   "Services" stays a link to the index; a separate button opens the
+   submenu, so keyboard and touch users can reach the children without
+   being navigated away first.
+   ============================================================ */
+.nav-item{ display:flex; align-items:center; gap:.3rem; }
+.nav-sub-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; padding:0; border:0; background:transparent;
+  color:var(--white); opacity:.7;
+  transition:opacity .2s var(--ease), transform .25s var(--ease);
+}
+.nav-sub-toggle svg{ width:15px; height:15px; }
+.nav-sub-toggle:hover{ opacity:1; }
+.nav-item.is-open > .nav-sub-toggle{ transform:rotate(180deg); opacity:1; }
+.nav-sub{ list-style:none; margin:0; padding:0; }
+.nav-sub a{
+  display:block; white-space:nowrap;
+  font-family:var(--font-head); font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--white);
+}
+
+@media (min-width:901px){
+  .nav-item{ position:relative; }
+  /* Keeps the pointer inside the item while it crosses the gap to the panel. */
+  .nav-item::after{
+    content:''; position:absolute; top:100%; left:-1rem; right:-1rem; height:1rem;
+  }
+  .nav-sub{
+    position:absolute; top:calc(100% + 1rem); left:50%; z-index:3;
+    min-width:14.5rem; padding:.5rem 0;
+    background:rgba(14,12,10,.94);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    border:1px solid rgba(246,241,234,.1);
+    box-shadow:0 26px 50px -26px rgba(0,0,0,.85);
+    opacity:0; visibility:hidden; pointer-events:none;
+    transform:translate(-50%,-8px);
+    transition:opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
+  }
+  /* Opened only by `is-open`. A `:focus-within` rule here would also match
+     the toggle itself, so Escape would close the panel and the returning
+     focus would immediately reopen it. */
+  .nav-item.is-open > .nav-sub{
+    opacity:1; visibility:visible; pointer-events:auto; transform:translate(-50%,0);
+  }
+  .nav-sub a{
+    padding:.62rem 1.3rem; font-size:.78rem;
+    color:rgba(246,241,234,.78);
+    border-left:2px solid transparent;
+    transition:color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+  }
+  .nav-sub a:hover,
+  .nav-sub a:focus-visible{
+    color:var(--white); background:rgba(226,132,45,.12); border-left-color:var(--orange);
+  }
+}
+
+@media (max-width:900px){
+  /* The panel can now hold twelve rows, so it has to be able to scroll —
+     and `safe` keeps the first row reachable once it overflows. */
+  .main-nav{ overflow-y:auto; justify-content:center; justify-content:safe center; }
+  .main-nav > *{ flex:0 0 auto; }
+  .nav-item{ flex-wrap:wrap; width:100%; gap:.6rem; }
+  .nav-sub-toggle{ width:38px; height:38px; }
+  .nav-sub-toggle svg{ width:22px; height:22px; }
+  .nav-sub{
+    flex:0 0 100%; overflow:hidden;
+    max-height:0;
+    transition:max-height .32s var(--ease), opacity .24s var(--ease);
+    opacity:0;
+  }
+  /* Seven rows at ~2.1rem; the ceiling only has to clear the real height. */
+  .nav-item.is-open > .nav-sub{ max-height:26rem; opacity:1; }
+  .nav-sub a{
+    font-size:1rem; padding:.5rem 0 .5rem 1.1rem;
+    color:rgba(246,241,234,.72);
+    border-left:1px solid rgba(246,241,234,.18);
+  }
+  .nav-sub a:hover{ color:var(--orange); border-left-color:var(--orange); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .nav-sub{ transition:none; }
+  .nav-sub-toggle{ transition:none; }
+}

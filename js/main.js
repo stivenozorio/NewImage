@@ -411,6 +411,14 @@
       const isOpen = mainNav.classList.toggle("is-open");
       menuToggle.setAttribute("aria-expanded", String(isOpen));
       document.body.style.overflow = isOpen ? "hidden" : "";
+      // Don't leave a submenu expanded behind a closed panel.
+      if (!isOpen) {
+        mainNav.querySelectorAll("[data-nav-item].is-open").forEach((i) => {
+          i.classList.remove("is-open");
+          const t = i.querySelector("[data-nav-toggle]");
+          if (t) t.setAttribute("aria-expanded", "false");
+        });
+      }
     });
     mainNav.querySelectorAll("a").forEach((a) => {
       a.addEventListener("click", () => {
@@ -419,6 +427,70 @@
         document.body.style.overflow = "";
       });
     });
+  }
+
+  /* ---------- Services dropdown ---------- */
+  const navItems = Array.from(document.querySelectorAll("[data-nav-item]"));
+  if (navItems.length) {
+    const wide = window.matchMedia("(min-width:901px)");
+    const hoverable = window.matchMedia("(hover: hover)");
+
+    const setOpen = (item, open) => {
+      item.classList.toggle("is-open", open);
+      const toggle = item.querySelector("[data-nav-toggle]");
+      // Hover opens the panel too, so the state is written here rather than
+      // only on click — otherwise aria-expanded would report it as closed.
+      if (toggle) toggle.setAttribute("aria-expanded", String(open));
+    };
+    const closeAll = () => navItems.forEach((i) => setOpen(i, false));
+
+    navItems.forEach((item) => {
+      const toggle = item.querySelector("[data-nav-toggle]");
+      if (toggle) {
+        toggle.addEventListener("click", () => {
+          // With a pointer over the item, hover has already opened the panel,
+          // so a plain toggle here would close what the user just clicked to
+          // open. Under the pointer the button only ever opens; on touch and
+          // via the keyboard it toggles.
+          const hoverDriven = wide.matches && hoverable.matches && item.matches(":hover");
+          const open = hoverDriven || !item.classList.contains("is-open");
+          closeAll();
+          setOpen(item, open);
+        });
+      }
+      item.addEventListener("mouseenter", () => {
+        if (wide.matches && hoverable.matches) setOpen(item, true);
+      });
+      item.addEventListener("mouseleave", () => {
+        // Don't yank the panel away from a keyboard user whose focus is
+        // still inside it just because the pointer wandered off.
+        if (wide.matches && hoverable.matches && !item.contains(document.activeElement)) {
+          setOpen(item, false);
+        }
+      });
+      // The panel is only focusable while open, so tabbing out of its last
+      // link is what closes it again.
+      item.addEventListener("focusout", (event) => {
+        if (!item.contains(event.relatedTarget)) setOpen(item, false);
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const open = navItems.find((i) => i.classList.contains("is-open"));
+      if (!open) return;
+      closeAll();
+      const toggle = open.querySelector("[data-nav-toggle]");
+      if (toggle) toggle.focus();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!navItems.some((i) => i.contains(event.target))) closeAll();
+    });
+
+    // Switching between the panel and the bar leaves the other layout's
+    // state behind, so reset on the breakpoint change.
+    wide.addEventListener("change", closeAll);
   }
 
   /* ---------- Scroll-triggered animations ---------- */

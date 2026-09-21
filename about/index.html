@@ -25,7 +25,22 @@
   </button>
   <nav class="main-nav">
     <a href="/">Home</a>
-    <a href="/services/">Services</a>
+    <div class="nav-item" data-nav-item>
+      <a href="/services/">Services</a>
+      <button class="nav-sub-toggle" type="button" data-nav-toggle
+              aria-expanded="false" aria-controls="nav-services" aria-label="Services submenu">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+      <ul class="nav-sub" id="nav-services">
+        <li><a href="/services/kitchen/">Kitchen</a></li>
+        <li><a href="/services/bathroom/">Bathroom</a></li>
+        <li><a href="/services/closets/">Closets</a></li>
+        <li><a href="/services/floor/">Floor</a></li>
+        <li><a href="/services/painting/">Painting</a></li>
+        <li><a href="/services/exterior-work/">Exterior Work</a></li>
+        <li><a href="/services/custom-wall-units/">Custom Wall Units</a></li>
+      </ul>
+    </div>
     <a href="/work/">Our Work</a>
     <a href="/about/">About</a>
     <a href="/contact/">Contact</a>
