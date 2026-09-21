@@ -72,7 +72,8 @@
       to: parseFloat(el.dataset.to),
       alpha: -1,
       off: null,
-      live: null
+      live: null,
+      filter: ""
     }));
 
     // Anything that makes the cinematic version a bad idea falls back to
@@ -105,12 +106,12 @@
     // chapter still lands on the scene it was written for.
     const SOURCES = {
       wide: {
-        src: "/assets/video/hero-wide.mp4", top: 64 / 1920, height: 1000 / 1920, w: 1080, h: 1000,
+        src: "/assets/video/hero-wide.mp4", top: 64 / 1920, height: 1000 / 1920, w: 1080, h: 1000, fps: 15,
         curve: [0, 0.2044, 0.2869, 0.3342, 0.376, 0.4152, 0.4517, 0.4881, 0.5246, 0.5665,
                 0.6083, 0.6475, 0.6813, 0.7177, 0.7542, 0.7906, 0.8325, 0.869, 0.9054, 0.9419, 1]
       },
       portrait: {
-        src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280,
+        src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15,
         curve: [0, 0.2119, 0.309, 0.3648, 0.4077, 0.4475, 0.4874, 0.5208, 0.5574, 0.5908,
                 0.6275, 0.6704, 0.7102, 0.75, 0.7867, 0.8201, 0.8535, 0.8901, 0.9236, 0.9634, 1]
       }
@@ -193,6 +194,13 @@
       // The last frame is not addressable at exactly `duration`.
       let t = clamp(timeFraction(p) * duration, 0, duration - 0.05);
 
+      // Snap to the clip's own frame grid. A time between two frames decodes
+      // the identical picture, so seeking there is a decode for nothing —
+      // and at 15fps the old 0.02s threshold allowed three of them per frame
+      // the viewer could actually see.
+      const step = 1 / SOURCES[mode].fps;
+      t = Math.min(Math.round(t / step) * step, duration - 0.05);
+
       // Asking for a frame that has not downloaded yet blanks the poster,
       // so hold at the edge of what is buffered and say so.
       const ready = seekable(t);
@@ -202,7 +210,7 @@
         cinema.classList.toggle("is-buffering", buffering);
       }
 
-      if (Math.abs(video.currentTime - t) < 0.02) return true;
+      if (Math.abs(video.currentTime - t) < step * 0.5) return true;
       if (video.seeking) return !ready;
       try {
         // Every frame is a keyframe, so fastSeek lands exactly where asked.
@@ -269,7 +277,15 @@
         style.transform =
           "translate3d(0," + (dir * (1 - a) * 26).toFixed(2) + "px,0) scale(" +
           (0.986 + a * 0.014).toFixed(4) + ")";
-        style.filter = a > 0.985 ? "none" : "blur(" + ((1 - a) * 4.5).toFixed(2) + "px)";
+        // Quantised to half-pixel steps: a fresh radius every frame means a
+        // fresh filter render every frame, and at this size the steps are
+        // not visible anyway.
+        const blur = a > 0.985 ? 0 : Math.round((1 - a) * 3 * 2) / 2;
+        const filter = blur > 0 ? "blur(" + blur + "px)" : "none";
+        if (filter !== c.filter) {
+          c.filter = filter;
+          style.filter = filter;
+        }
       }
       return leadIndex;
     };
@@ -281,7 +297,16 @@
     let easedC = 0;
     let lastRail = -1;
     let cueHidden = null;
-    const EASE_K = 0.16;
+    // Smoothing is a time constant, not a per-frame fraction: a fixed
+    // fraction settles in a number of frames, so the same flick trailed for
+    // ~0.8s at 60fps and longer on a slower device. Converting dt to an
+    // exponential gives the same settle in real time everywhere.
+    const EASE_TAU = 55; // ms to cover 63% of the remaining distance
+    // Stop when the rest would not be visible: one video frame at 15fps is
+    // ~0.0066 of the timeline, so a third of that is already sub-frame, and
+    // the pan it leaves behind is a couple of pixels.
+    const SETTLE = 0.0015;
+    let lastFrameAt = 0;
 
     // The film runs for the whole act (hero + the philosophy line that
     // follows); the chapters only run for the hero. Two progress values,
@@ -303,16 +328,34 @@
       cinema.style.setProperty("--hero-pan-still", panPercent(0).toFixed(2) + "%");
     };
 
+    // Writing a custom property invalidates style for everything that reads
+    // it, even when the value is unchanged, so each write is guarded.
+    let lastPan = "";
+    let lastZoom = "";
+    let lastStageOpacity = "";
+
     const paint = (film, chapter) => {
       const videoSettled = scrub(film);
       const tf = timeFraction(film);
-      cinema.style.setProperty("--hero-pan", panPercent(tf).toFixed(2) + "%");
+
+      const pan = panPercent(tf).toFixed(2) + "%";
+      if (pan !== lastPan) {
+        lastPan = pan;
+        cinema.style.setProperty("--hero-pan", pan);
+      }
       // A slow dolly-out across the calm opening, so something is always
       // moving even before the footage picks up.
-      const zoom = 1 + 0.08 * (1 - ease(ramp(film, 0, 0.35)));
-      cinema.style.setProperty("--hero-zoom", zoom.toFixed(4));
+      const zoom = (1 + 0.08 * (1 - ease(ramp(film, 0, 0.35)))).toFixed(4);
+      if (zoom !== lastZoom) {
+        lastZoom = zoom;
+        cinema.style.setProperty("--hero-zoom", zoom);
+      }
       // Dissolve the chapters as the philosophy line takes over.
-      stage.style.opacity = (1 - ramp(chapter, 0.955, 1)).toFixed(3);
+      const stageOpacity = (1 - ramp(chapter, 0.955, 1)).toFixed(3);
+      if (stageOpacity !== lastStageOpacity) {
+        lastStageOpacity = stageOpacity;
+        stage.style.opacity = stageOpacity;
+      }
 
       const lead = paintChapters(chapter);
       if (lead !== lastRail) {
@@ -333,17 +376,27 @@
       const now = readProgress();
       targetP = now.film;
       targetC = now.chapter;
-      // Ease towards the scroll position so a flick of the wheel plays as
-      // a glide rather than a jump — and settles exactly on target.
-      easedP += (targetP - easedP) * EASE_K;
-      easedC += (targetC - easedC) * EASE_K;
-      if (Math.abs(targetP - easedP) < 0.0002) easedP = targetP;
-      if (Math.abs(targetC - easedC) < 0.0002) easedC = targetC;
+
+      // Ease towards the scroll position so a flick of the wheel plays as a
+      // glide rather than a jump, then land on it promptly once the wheel
+      // stops. Clamped because a backgrounded tab hands back a huge dt.
+      const stamp = performance.now();
+      const dt = lastFrameAt ? Math.min(stamp - lastFrameAt, 100) : 16.7;
+      lastFrameAt = stamp;
+      const k = 1 - Math.exp(-dt / EASE_TAU);
+
+      easedP += (targetP - easedP) * k;
+      easedC += (targetC - easedC) * k;
+      if (Math.abs(targetP - easedP) < SETTLE) easedP = targetP;
+      if (Math.abs(targetC - easedC) < SETTLE) easedC = targetC;
       const videoSettled = paint(easedP, easedC);
       return easedP !== targetP || easedC !== targetC || !videoSettled;
     });
 
-    const invalidate = requestFrame;
+    const invalidate = () => {
+      lastFrameAt = 0; // don't carry a stale gap across an idle period
+      requestFrame();
+    };
 
     /* ---- lifecycle ----------------------------------------------------- */
     video.addEventListener("loadedmetadata", () => {

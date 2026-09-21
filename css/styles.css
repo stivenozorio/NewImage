@@ -366,7 +366,10 @@ button{ font-family:inherit; cursor:pointer; }
   position:absolute; inset:0; min-height:0;
   opacity:0; pointer-events:none;
   transform-origin:0 100%;
-  will-change:opacity, transform, filter;
+  /* `filter` here makes the browser hold a filter buffer for all six
+     viewport-sized chapters permanently, which measured at 43fps against
+     60 without it. opacity and transform promote cheaply. */
+  will-change:opacity, transform;
   backface-visibility:hidden;
 }
 .is-cinema .hero-chapter.is-off{ visibility:hidden; }
