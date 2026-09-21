@@ -440,6 +440,77 @@
     animated.forEach((el) => io.observe(el));
   }
 
+  /* ============================================================
+     Carousel — the scroll container is the source of truth.
+     Snapping, swiping and arrow keys are native; the buttons and dots
+     only read that state back and scroll it, so the carousel still
+     works if this script never runs.
+     ============================================================ */
+  document.querySelectorAll("[data-carousel]").forEach((root) => {
+    const viewport = root.querySelector("[data-carousel-viewport]");
+    const slides = Array.from(root.querySelectorAll(".carousel-slide"));
+    if (!viewport || slides.length < 2) return;
+
+    const prev = root.querySelector("[data-carousel-prev]");
+    const next = root.querySelector("[data-carousel-next]");
+    const label = root.querySelector("[data-carousel-index]");
+    const dots = Array.from(root.querySelectorAll("[data-carousel-dot]"));
+    let current = -1;
+
+    // Nearest slide centre to the viewport centre, so a half-finished
+    // swipe still reports the slide the reader is actually looking at.
+    const activeIndex = () => {
+      const mid = viewport.scrollLeft + viewport.clientWidth / 2;
+      let best = 0;
+      let bestGap = Infinity;
+      for (let i = 0; i < slides.length; i++) {
+        const gap = Math.abs(slides[i].offsetLeft + slides[i].offsetWidth / 2 - mid);
+        if (gap < bestGap) {
+          bestGap = gap;
+          best = i;
+        }
+      }
+      return best;
+    };
+
+    const sync = () => {
+      const i = activeIndex();
+      if (i === current) return;
+      current = i;
+      if (label) label.textContent = String(i + 1);
+      dots.forEach((d, n) => d.parentElement.classList.toggle("is-current", n === i));
+      // At either end the button has nowhere to go; say so rather than
+      // leaving a control that silently does nothing.
+      if (prev) prev.disabled = i === 0;
+      if (next) next.disabled = i === slides.length - 1;
+    };
+
+    const goTo = (i) => {
+      const target = slides[clamp(i, 0, slides.length - 1)];
+      if (!target) return;
+      viewport.scrollTo({
+        left: target.offsetLeft - (viewport.clientWidth - target.offsetWidth) / 2,
+        behavior: motionQuery.matches ? "auto" : "smooth"
+      });
+    };
+
+    if (prev) prev.addEventListener("click", () => goTo(activeIndex() - 1));
+    if (next) next.addEventListener("click", () => goTo(activeIndex() + 1));
+    dots.forEach((d, n) => d.addEventListener("click", () => goTo(n)));
+
+    let queued = false;
+    viewport.addEventListener("scroll", () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        sync();
+      });
+    }, { passive: true });
+    window.addEventListener("resize", sync, { passive: true });
+    sync();
+  });
+
   /* ---------- Gallery filter ---------- */
   const filterBar = document.querySelector(".filter-bar");
   const galleryItems = document.querySelectorAll("[data-category]");
