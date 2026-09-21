@@ -34,7 +34,7 @@ ALT = {
   "Pool and covered patio at dusk"],
  "wall-units": [
   "Built-in white desk and cabinets with a dark stone top beneath a window",
-  "Floor-to-ceiling white built-in bookshelf wall unit with cabinet storage"],
+  "Floor-to-ceiling white built-in bookshelf and cabinet wall unit, filled with books"],
 }
 
 SERVICES = [
