@@ -88,33 +88,23 @@
     cinema.classList.add("is-cinema");
 
     /* ---- sources -----------------------------------------------------
-       Two encodes, both all-intra so any frame can be decoded on its own:
-         wide     — the film cropped to its cinematic band (source rows
-                    64–1064 of 1920), which keeps the titles burned into
-                    the footage out of frame on landscape screens.
-         portrait — the full 9:16 composition, trimmed just before the
-                    burned-in end card, for phones held upright.
-       `top`/`height` describe each file's slice of the original 1920px
-       frame, so the pan maths can talk in source coordinates.
+       One 1080x1920 all-intra clip, unmodified in framing (no crop —
+       there is no burned-in logo to dodge this time), served under both
+       keys. wide/portrait stay as separate names for cache clarity and
+       parity with the poster markup; the geometry is identical, so the
+       camera pans across the very same frame on every screen shape.
     -------------------------------------------------------------------- */
-    // `curve` maps scroll progress to a fraction of the clip's duration.
-    // A linear map would spend the first 40% of the scroll on the opening
-    // seconds, which carry only 11% of the footage's movement — two screens
-    // of scrolling for almost no motion. These tables are built from the
-    // clip's measured frame-to-frame movement (65% motion-equalised, 35%
-    // linear), so the pace stays roughly even from top to bottom while each
-    // chapter still lands on the scene it was written for.
+    // `curve` maps scroll progress to a fraction of the clip's duration,
+    // built the same way as before: from the clip's own measured
+    // frame-to-frame movement (65% motion-equalised, 35% linear), so
+    // equal scroll covers roughly equal motion — this clip's pacing was
+    // already close to even, so the correction here is gentler than the
+    // original footage needed.
+    const CURVE = [0, 0.1123, 0.1636, 0.2048, 0.2494, 0.3008, 0.3521, 0.3967, 0.4413, 0.4859,
+                   0.5305, 0.5751, 0.6196, 0.6642, 0.7156, 0.7737, 0.8284, 0.8798, 0.921, 0.9588, 1];
     const SOURCES = {
-      wide: {
-        src: "/assets/video/hero-wide.mp4", top: 64 / 1920, height: 1000 / 1920, w: 1080, h: 1000, fps: 15,
-        curve: [0, 0.2044, 0.2869, 0.3342, 0.376, 0.4152, 0.4517, 0.4881, 0.5246, 0.5665,
-                0.6083, 0.6475, 0.6813, 0.7177, 0.7542, 0.7906, 0.8325, 0.869, 0.9054, 0.9419, 1]
-      },
-      portrait: {
-        src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15,
-        curve: [0, 0.2119, 0.309, 0.3648, 0.4077, 0.4475, 0.4874, 0.5208, 0.5574, 0.5908,
-                0.6275, 0.6704, 0.7102, 0.75, 0.7867, 0.8201, 0.8535, 0.8901, 0.9236, 0.9634, 1]
-      }
+      wide: { src: "/assets/video/hero-wide.mp4", top: 0, height: 1, w: 1080, h: 1920, fps: 15, curve: CURVE },
+      portrait: { src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 1080, h: 1920, fps: 15, curve: CURVE }
     };
 
     const timeFraction = (p) => {
@@ -137,15 +127,18 @@
     };
 
     /* ---- the camera -------------------------------------------------
-       Where the visible band should sit inside the original frame, as a
-       fraction of its height. It opens high (blueprints and dusk sky),
-       tilts down into the framing, then lifts to the finished house —
-       and never crosses the rows where the film burns in its own titles.
+       Where the visible band should sit inside the frame, as a fraction
+       of its height (0 = top, 1 = bottom). Holds low on the blueprints
+       and tape measure, rises to centre as the camera pushes through the
+       framed structure, then settles slightly low again on the final
+       reveal so the pool stays in frame rather than the roofline eating
+       the shot. Measured against real rendered crops, not guessed.
     -------------------------------------------------------------------- */
     const bandCenter = (tf) => {
-      if (tf <= 0.45) return 0.219;
-      if (tf <= 0.7) return 0.219 + ((tf - 0.45) / 0.25) * (0.39 - 0.219);
-      return 0.39 + ((tf - 0.7) / 0.3) * (0.281 - 0.39);
+      if (tf <= 0.2) return 0.68;
+      if (tf <= 0.45) return 0.68 + ((tf - 0.2) / 0.25) * (0.47 - 0.68);
+      if (tf <= 0.85) return 0.47;
+      return 0.47 + ((tf - 0.85) / 0.15) * (0.58 - 0.47);
     };
 
     // `tf` is a fraction of the clip's duration, not of the scroll.

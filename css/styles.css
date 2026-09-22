@@ -170,7 +170,7 @@ button{ font-family:inherit; cursor:pointer; }
   --hero-track:520svh;
   --hero-outro:90svh;
   --hero-pan:20%;          /* object-position Y,  driven by JS  */
-  --hero-pan-still:6%;
+  --hero-pan-still:60%;
   --hero-zoom:1;           /* slow push, driven by JS           */
   --hero-fg:#f6f1ea;
   position:relative;
