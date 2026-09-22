@@ -550,6 +550,11 @@ button{ font-family:inherit; cursor:pointer; }
   font-family:var(--font-head);
   font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; text-align:center; padding:1.5rem;
 }
+/* An author `display` rule beats the UA stylesheet's `[hidden]{display:none}`
+   at equal specificity, so the gallery filter's item.hidden=true was being
+   silently ignored here — the "coming soon" card stayed visible under every
+   filter instead of only "All" and "Painting". */
+.placeholder-figure[hidden]{ display:none; }
 
 .filter-bar{ display:flex; flex-wrap:wrap; gap:.6rem; margin:2.2rem 0 2.5rem; }
 .filter-btn{

@@ -5,7 +5,6 @@ ALT = {
  "kitchens": [
   "Navy blue kitchen base cabinets with brushed chrome bar pulls and a light stone countertop",
   "White kitchen with a waterfall marble island, wall ovens and garden windows",
-  "Marble waterfall island with navy cabinetry and a wall of garden windows",
   "Marble countertop with an undermount sink, gooseneck faucet and stainless wall ovens",
   "Cream flat-panel kitchen cabinets with a stainless dishwasher and wood-look flooring"],
  "bathrooms": [
