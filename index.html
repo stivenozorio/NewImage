@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="preload" as="image" href="/assets/video/hero-poster-portrait.webp" media="(max-aspect-ratio: 29/20)" />
 <link rel="preload" as="image" href="/assets/video/hero-poster-wide.webp" media="(min-aspect-ratio: 29/20)" />
+<link rel="preload" as="image" href="/assets/hero-frames/f001.webp" fetchpriority="high" />
 <link rel="stylesheet" href="/css/styles.css?v=3" />
 <script type="application/ld+json">
 {
@@ -79,8 +80,7 @@
         <img src="/assets/video/hero-poster-portrait.webp" width="1080" height="1920" fetchpriority="high" decoding="async"
              alt="Architectural blueprints and a tape measure on a work table at dusk, beside a house under construction — the beginning of a New Image Construction &amp; Remodeling project." />
       </picture>
-      <video class="hero-video" data-hero-video muted playsinline preload="auto"
-             disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
+      <canvas class="hero-video" data-hero-canvas width="720" height="1280" aria-hidden="true"></canvas>
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="hero-grain" aria-hidden="true"></div>
   </div>

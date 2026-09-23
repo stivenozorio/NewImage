@@ -123,15 +123,30 @@ jobs:
             exit 1
           fi
 
-          # El scroll del hero depende de peticiones por rango sobre el mp4.
-          # Sin 206 el video se queda clavado en el primer fotograma.
+          # El hero ya no es un <video> escaneado por scroll (esa técnica
+          # dependía de range requests sobre el mp4) sino una secuencia de
+          # imágenes dibujadas en un <canvas>; el mp4 de closets sigue
+          # siendo un <video> con controles nativos, y ese sí depende de
+          # range requests para arrancar/scrubbear bien.
           codigo=$(curl -s -o /dev/null -w '%{http_code}' -r 0-99 \
             --connect-timeout 20 --max-time 40 \
-            https://newimageremodeling.co/assets/video/hero-wide.mp4 || echo "000")
+            https://newimageremodeling.co/assets/video/closet-walkthrough-1.mp4 || echo "000")
           if [ "${codigo}" = "206" ]; then
             echo "El hosting responde peticiones por rango (206) en los mp4."
           else
-            echo "::warning::El mp4 devolvio ${codigo} en vez de 206 para una peticion por rango. Si el video del hero no avanza con el scroll, la causa es esta."
+            echo "::warning::El mp4 devolvio ${codigo} en vez de 206 para una peticion por rango. Si el video de closets no arranca bien, la causa es esta."
+          fi
+
+          # El hero depende de que la primera imagen de la secuencia esté
+          # publicada; sin ella el hero se queda en el poster estático.
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' \
+            --connect-timeout 20 --max-time 40 \
+            https://newimageremodeling.co/assets/hero-frames/f001.webp || echo "000")
+          if [ "${codigo}" = "200" ]; then
+            echo "La primera imagen del hero está publicada."
+          else
+            echo "::error::assets/hero-frames/f001.webp devolvió ${codigo} en vez de 200."
+            exit 1
           fi
 
           echo "Confirmado: newimageremodeling.co refleja este despliegue."

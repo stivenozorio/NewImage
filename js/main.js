@@ -63,7 +63,7 @@
      Cinematic hero — the scroll position *is* the video timeline.
      ============================================================ */
   const initCinematicHero = (hero, cinema) => {
-    const video = cinema.querySelector("[data-hero-video]");
+    const canvas = cinema.querySelector("[data-hero-canvas]");
     const stage = hero.querySelector(".hero-stage");
     const railItems = Array.from(hero.querySelectorAll(".hero-rail li"));
     const chapters = Array.from(hero.querySelectorAll("[data-chapter]")).map((el) => ({
@@ -79,52 +79,45 @@
     // Anything that makes the cinematic version a bad idea falls back to
     // the static hero the base CSS already renders.
     const saveData = (navigator.connection && navigator.connection.saveData) === true;
-    if (!video || !stage || !chapters.length || reduceMotion || saveData ||
-        !video.canPlayType || !video.canPlayType("video/mp4")) {
+    if (!canvas || !stage || !chapters.length || reduceMotion || saveData || !canvas.getContext) {
       return;
     }
     chapters[0].isFirst = true;
     chapters[chapters.length - 1].isLast = true;
     cinema.classList.add("is-cinema");
 
-    /* ---- sources -----------------------------------------------------
-       One 1080x1920 all-intra clip, unmodified in framing (no crop —
-       there is no burned-in logo to dodge this time), served under both
-       keys. wide/portrait stay as separate names for cache clarity and
-       parity with the poster markup; the geometry is identical, so the
-       camera pans across the very same frame on every screen shape.
+    /* ---- frame sequence ------------------------------------------------
+       A scroll-scrubbed <video> asks the browser to seek dozens of times
+       a second. On Safari that seek has real, documented latency that
+       has nothing to do with network — a screen recording taken on WiFi
+       with the file fully buffered still showed the frame frozen for
+       over a second at a stretch while scrolling. Plain images sidestep
+       the seek pipeline entirely: once one is loaded, drawing it to a
+       canvas is synchronous, which is the same reason large scroll-driven
+       product pages use image sequences rather than video for this
+       exact effect.
+       One frame set covers both breakpoints — the source has no crop to
+       differ by orientation, so panPercent() just recomputes the cover
+       math against whatever box it is drawn into.
     -------------------------------------------------------------------- */
-    // `curve` maps scroll progress to a fraction of the clip's duration,
-    // built the same way as before: from the clip's own measured
-    // frame-to-frame movement (65% motion-equalised, 35% linear), so
-    // equal scroll covers roughly equal motion — this clip's pacing was
-    // already close to even, so the correction here is gentler than the
-    // original footage needed.
+    const FRAME_COUNT = 120;
+    const FPS = 15;
+    const FRAME_W = 720;
+    const FRAME_H = 1280;
+    // Maps scroll progress to a fraction of the sequence, built from the
+    // clip's own measured frame-to-frame movement (65% motion-equalised,
+    // 35% linear) so equal scroll covers roughly equal motion.
     const CURVE = [0, 0.1123, 0.1636, 0.2048, 0.2494, 0.3008, 0.3521, 0.3967, 0.4413, 0.4859,
                    0.5305, 0.5751, 0.6196, 0.6642, 0.7156, 0.7737, 0.8284, 0.8798, 0.921, 0.9588, 1];
-    const SOURCES = {
-      wide: { src: "/assets/video/hero-wide.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15, curve: CURVE },
-      portrait: { src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15, curve: CURVE }
-    };
 
     const timeFraction = (p) => {
-      const c = SOURCES[mode].curve;
-      const x = clamp(p, 0, 1) * (c.length - 1);
-      const i = Math.min(Math.floor(x), c.length - 2);
-      return c[i] + (c[i + 1] - c[i]) * (x - i);
+      const x = clamp(p, 0, 1) * (CURVE.length - 1);
+      const i = Math.min(Math.floor(x), CURVE.length - 2);
+      return CURVE[i] + (CURVE[i + 1] - CURVE[i]) * (x - i);
     };
-    const WIDE_RATIO = 1.45;
-    let mode = null;
 
-    const applySource = () => {
-      const next = window.innerWidth / window.innerHeight >= WIDE_RATIO ? "wide" : "portrait";
-      if (next === mode) return false;
-      mode = next;
-      cinema.classList.remove("is-video-ready");
-      video.src = SOURCES[mode].src;
-      video.load();
-      return true;
-    };
+    const framePath = (i) => "/assets/hero-frames/f" + String(i + 1).padStart(3, "0") + ".webp";
+    const frames = Array.from({ length: FRAME_COUNT }, () => ({ img: new Image(), loaded: false }));
 
     /* ---- the camera -------------------------------------------------
        Where the visible band should sit inside the frame, as a fraction
@@ -141,86 +134,56 @@
       return 0.47 + ((tf - 0.85) / 0.15) * (0.58 - 0.47);
     };
 
-    // `tf` is a fraction of the clip's duration, not of the scroll.
+    // `tf` is a fraction of the sequence, not of the scroll.
     const panPercent = (tf) => {
-      const src = SOURCES[mode];
-      const vw = video.videoWidth || src.w;
-      const vh = video.videoHeight || src.h;
       const boxW = stage.clientWidth;
       const boxH = stage.clientHeight;
-      if (!vw || !vh || !boxW || !boxH) return 50;
+      if (!boxW || !boxH) return 50;
       // object-fit: cover, width-constrained is the only case with slack.
-      const renderedH = vh * (boxW / vw);
+      const renderedH = FRAME_H * (boxW / FRAME_W);
       if (renderedH <= boxH + 1) return 50;
-      const visible = boxH / renderedH; // fraction of the file that fits
-      const centerInFile = (bandCenter(tf) - src.top) / src.height;
+      const visible = boxH / renderedH; // fraction of the frame that fits
+      const centerInFile = bandCenter(tf);
       return clamp((centerInFile - visible / 2) / (1 - visible), 0, 1) * 100;
     };
 
-    /* ---- video scrubbing --------------------------------------------- */
+    /* ---- frame rendering ------------------------------------------------ */
     let buffering = false;
+    let lastDrawnIndex = -1;
+    const ctx = canvas.getContext("2d");
 
-    const seekable = (t) => {
-      const b = video.buffered;
-      if (!b || !b.length) return false;
-      for (let i = 0; i < b.length; i++) {
-        if (t >= b.start(i) - 0.02 && t <= b.end(i)) return true;
+    const frameIndexFor = (p) => Math.round(timeFraction(p) * (FRAME_COUNT - 1));
+
+    // Walks outward from the target for the nearest frame actually
+    // loaded, so a not-yet-arrived frame holds the last real picture
+    // instead of blanking — same idea as the old video's bufferedCeiling.
+    const nearestLoaded = (target) => {
+      for (let d = 0; d < FRAME_COUNT; d++) {
+        const back = target - d;
+        if (back >= 0 && frames[back].loaded) return back;
+        const fwd = target + d;
+        if (fwd < FRAME_COUNT && frames[fwd].loaded) return fwd;
       }
-      return false;
-    };
-    const bufferedCeiling = (t) => {
-      const b = video.buffered;
-      let best = 0;
-      if (!b) return best;
-      for (let i = 0; i < b.length; i++) {
-        if (b.start(i) <= t + 0.02) best = Math.max(best, Math.min(t, b.end(i)));
-      }
-      return best;
+      return -1;
     };
 
-    // Returns true once the frame on screen matches the scroll position.
-    // The loop keeps running until it does, so a seek that is still in
-    // flight when the easing settles still gets its final update.
-    const scrub = (p) => {
-      const duration = video.duration;
-      if (!isFinite(duration) || duration <= 0) return true;
-      // The last frame is not addressable at exactly `duration`.
-      let t = clamp(timeFraction(p) * duration, 0, duration - 0.05);
-
-      // Snap to the clip's own frame grid. A time between two frames decodes
-      // the identical picture, so seeking there is a decode for nothing —
-      // and at 15fps the old 0.02s threshold allowed three of them per frame
-      // the viewer could actually see.
-      const step = 1 / SOURCES[mode].fps;
-      t = Math.min(Math.round(t / step) * step, duration - 0.05);
-
-      // Asking for a frame that has not downloaded yet blanks the poster,
-      // so hold at the edge of what is buffered and say so.
-      const ready = seekable(t);
-      if (!ready) t = bufferedCeiling(t);
+    // Drawing a loaded frame is synchronous, so this is always settled by
+    // the time it returns — the only thing left to wait for is a still-
+    // missing image, and its own onload wakes the loop again.
+    const renderFrame = (p) => {
+      const target = frameIndexFor(p);
+      const ready = frames[target].loaded;
+      const idx = ready ? target : nearestLoaded(target);
       if (!ready !== buffering) {
         buffering = !ready;
         cinema.classList.toggle("is-buffering", buffering);
       }
-
-      if (Math.abs(video.currentTime - t) < step * 0.5) return true;
-      if (video.seeking) return !ready;
-      try {
-        // fastSeek trades precision for speed — exactly backwards here,
-        // where the frame has to match the scroll position exactly. It
-        // also buys nothing on all-intra content: fastSeek's speed comes
-        // from landing on the nearest keyframe instead of the exact time,
-        // and every frame already is one, so there is no distant keyframe
-        // to skip past. Plain currentTime is the correct call on every
-        // engine, and fastSeek's inconsistent support (notably Safari) was
-        // a real source of the seek lag reported there.
-        video.currentTime = t;
-      } catch (err) {
-        /* a seek before the metadata lands is not worth reporting */
+      if (idx !== -1 && idx !== lastDrawnIndex) {
+        lastDrawnIndex = idx;
+        ctx.drawImage(frames[idx].img, 0, 0, FRAME_W, FRAME_H);
+        canvas.dataset.frameTime = (idx / FPS).toFixed(3); // test hook
       }
-      // When we are waiting on the network, let `progress` wake us instead
-      // of spinning a frame callback at 60fps.
-      return !ready;
+      return true;
     };
 
     /* ---- chapter transitions ------------------------------------------
@@ -334,7 +297,7 @@
     let lastStageOpacity = "";
 
     const paint = (film, chapter) => {
-      const videoSettled = scrub(film);
+      const videoSettled = renderFrame(film);
       const tf = timeFraction(film);
 
       const pan = panPercent(tf).toFixed(2) + "%";
@@ -398,35 +361,29 @@
     };
 
     /* ---- lifecycle ----------------------------------------------------- */
-    video.addEventListener("loadedmetadata", () => {
-      setStillPan();
-      invalidate();
-    });
-    video.addEventListener("progress", requestFrame, { passive: true });
-    video.addEventListener("seeked", requestFrame, { passive: true });
-    video.addEventListener("loadeddata", () => {
-      cinema.classList.add("is-video-ready");
-      // iOS will not paint a frame from a video that has never played, so
-      // prime the decoder once and stop again immediately.
-      const started = video.play();
-      if (started && typeof started.then === "function") {
-        started.then(() => video.pause()).catch(() => {});
-      } else {
-        try { video.pause(); } catch (err) { /* already paused */ }
-      }
-      invalidate();
-    });
-    video.addEventListener("error", () => {
-      // The poster stays, the copy stays, the scroll still works.
-      cinema.classList.add("is-video-failed");
-      cinema.classList.remove("is-buffering");
+    // Frame 0 first (it is also preloaded in the document head), then the
+    // rest in order — the browser parallelises the requests on its own.
+    frames.forEach((frame, i) => {
+      frame.img.decoding = "async";
+      frame.img.onload = () => {
+        frame.loaded = true;
+        if (i === 0) cinema.classList.add("is-video-ready");
+        invalidate();
+      };
+      frame.img.onerror = () => {
+        // The poster stays, the copy stays, the scroll still works.
+        if (i === 0) {
+          cinema.classList.add("is-video-failed");
+          cinema.classList.remove("is-buffering");
+        }
+      };
+      frame.img.src = framePath(i);
     });
 
     let resizeTimer = null;
     const onResize = () => {
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
-        applySource();
         setStillPan();
         invalidate();
       }, 160);
@@ -448,7 +405,6 @@
       });
     });
 
-    applySource();
     setStillPan();
     invalidate();
   };

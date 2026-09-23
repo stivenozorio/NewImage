@@ -390,7 +390,7 @@ button{ font-family:inherit; cursor:pointer; }
 }
 .is-cinema.is-cue-off .hero-cue{ opacity:0; transform:translate(-50%,12px); pointer-events:none; }
 
-/* Buffering hint while the first seconds stream in */
+/* Buffering hint for scrolling ahead of what has loaded */
 .is-cinema .hero-media::after{
   content:''; position:absolute; z-index:5; left:0; right:0; bottom:0; height:2px;
   background:linear-gradient(90deg, var(--orange), var(--gold));
