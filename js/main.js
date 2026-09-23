@@ -206,9 +206,15 @@
       if (Math.abs(video.currentTime - t) < step * 0.5) return true;
       if (video.seeking) return !ready;
       try {
-        // Every frame is a keyframe, so fastSeek lands exactly where asked.
-        if (typeof video.fastSeek === "function") video.fastSeek(t);
-        else video.currentTime = t;
+        // fastSeek trades precision for speed — exactly backwards here,
+        // where the frame has to match the scroll position exactly. It
+        // also buys nothing on all-intra content: fastSeek's speed comes
+        // from landing on the nearest keyframe instead of the exact time,
+        // and every frame already is one, so there is no distant keyframe
+        // to skip past. Plain currentTime is the correct call on every
+        // engine, and fastSeek's inconsistent support (notably Safari) was
+        // a real source of the seek lag reported there.
+        video.currentTime = t;
       } catch (err) {
         /* a seek before the metadata lands is not worth reporting */
       }
