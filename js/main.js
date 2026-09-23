@@ -103,8 +103,8 @@
     const CURVE = [0, 0.1123, 0.1636, 0.2048, 0.2494, 0.3008, 0.3521, 0.3967, 0.4413, 0.4859,
                    0.5305, 0.5751, 0.6196, 0.6642, 0.7156, 0.7737, 0.8284, 0.8798, 0.921, 0.9588, 1];
     const SOURCES = {
-      wide: { src: "/assets/video/hero-wide.mp4", top: 0, height: 1, w: 1080, h: 1920, fps: 15, curve: CURVE },
-      portrait: { src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 1080, h: 1920, fps: 15, curve: CURVE }
+      wide: { src: "/assets/video/hero-wide.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15, curve: CURVE },
+      portrait: { src: "/assets/video/hero-portrait.mp4", top: 0, height: 1, w: 720, h: 1280, fps: 15, curve: CURVE }
     };
 
     const timeFraction = (p) => {
