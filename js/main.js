@@ -674,4 +674,65 @@
   document.querySelectorAll("[data-year]").forEach((el) => {
     el.textContent = new Date().getFullYear();
   });
+
+  /* ============================================================
+     Page assistant — reads the page's own headings (no fixed list to
+     keep in sync per page) and lists them as quick jump-to links.
+     ============================================================ */
+  const aiFab = document.querySelector(".ai-fab");
+  const aiPanel = document.querySelector(".ai-fab-panel");
+  if (aiFab && aiPanel) {
+    const list = aiPanel.querySelector(".ai-fab-list");
+    const closeBtn = aiPanel.querySelector(".ai-fab-close");
+
+    const headings = [];
+    const pageH1 = document.querySelector(".page-hero h1");
+    if (pageH1) headings.push(pageH1);
+    document.querySelectorAll(".section-title").forEach((el) => headings.push(el));
+
+    headings.forEach((heading) => {
+      const text = heading.textContent.trim().replace(/\s+/g, " ");
+      if (!text) return;
+      const target = heading.closest("section, .page-hero") || heading;
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = text;
+      btn.addEventListener("click", () => {
+        setOpen(false);
+        target.scrollIntoView({ behavior: motionQuery.matches ? "auto" : "smooth", block: "start" });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    if (!headings.length) {
+      const p = document.createElement("p");
+      p.className = "ai-fab-empty";
+      p.textContent = "Nothing to jump to on this page yet.";
+      list.appendChild(p);
+    }
+
+    const setOpen = (open) => {
+      aiFab.setAttribute("aria-expanded", String(open));
+      aiPanel.hidden = !open;
+      if (open) {
+        const first = list.querySelector("button");
+        if (first) first.focus();
+      } else {
+        aiFab.focus();
+      }
+    };
+
+    aiFab.addEventListener("click", () => setOpen(aiFab.getAttribute("aria-expanded") !== "true"));
+    if (closeBtn) closeBtn.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && aiFab.getAttribute("aria-expanded") === "true") setOpen(false);
+    });
+    document.addEventListener("click", (event) => {
+      if (aiFab.getAttribute("aria-expanded") === "true" &&
+          !aiPanel.contains(event.target) && event.target !== aiFab) {
+        setOpen(false);
+      }
+    });
+  }
 })();
