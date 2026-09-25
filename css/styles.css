@@ -168,7 +168,12 @@ button{ font-family:inherit; cursor:pointer; }
    so the sticky media layer belongs to this wrapper rather than the hero. */
 .cinema{
   --hero-track:520svh;
-  --hero-outro:90svh;
+  /* Taller than the dissolve itself needs (~90svh) on purpose: the sticky
+     media releases over its own last ~100svh regardless of this box's
+     height (see FILM_TAIL in main.js), so there has to be that much
+     already-solid-cream room after the dissolve completes, or the film
+     visibly slides free mid-dissolve instead of a clean handoff. */
+  --hero-outro:180svh;
   --hero-pan:20%;          /* object-position Y,  driven by JS  */
   --hero-pan-still:60%;
   --hero-zoom:1;           /* slow push, driven by JS           */
@@ -347,14 +352,17 @@ button{ font-family:inherit; cursor:pointer; }
    ============================================================ */
 .is-cinema .hero-cinema{ height:var(--hero-track); }
 /* The philosophy line scrolls over the still-running film, then dissolves
-   the whole act into the cream page. */
+   into solid cream well before the box ends — the remaining height is
+   settle room for the sticky media's release, not more dissolve, so the
+   text sits in the dark band near the top rather than centered in the
+   whole (much taller) box. */
 .is-cinema .hero-outro{
   position:relative; z-index:1;
   min-height:var(--hero-outro);
-  display:flex; align-items:center;
+  padding-top:64vh;
   background:linear-gradient(180deg,
-    rgba(10,9,8,0) 0%, rgba(10,9,8,.30) 26%, rgba(10,9,8,.78) 52%,
-    #1a1510 72%, #4a3f33 86%, #9c8a72 95%, var(--cream) 100%);
+    rgba(10,9,8,0) 0%, rgba(10,9,8,.30) 13%, rgba(10,9,8,.78) 26%,
+    #1a1510 36%, #4a3f33 43%, #9c8a72 48%, var(--cream) 50%, var(--cream) 100%);
 }
 .is-cinema .hero-stage{
   position:sticky; top:0;
