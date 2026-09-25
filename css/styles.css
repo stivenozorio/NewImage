@@ -19,10 +19,10 @@
   --graphite:#5c564c;
   --line:#e5dcd0;
 
-  --font-head:'Oswald', 'Arial Narrow', sans-serif;
+  --font-head:'Jost', 'Century Gothic', 'Avenir Next', sans-serif;
   --font-body:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  --section-pad: 6.5rem;
+  --section-pad: clamp(5rem, 8vw, 7.5rem);
   --container-w: 1240px;
 
   --ease: cubic-bezier(.22,.68,.32,1);
@@ -67,7 +67,7 @@ button{ font-family:inherit; cursor:pointer; }
 }
 .eyebrow::before{ content:''; width:28px; height:2px; background:var(--orange); }
 
-.section-title{ font-size:clamp(2rem,4vw,2.9rem); max-width:26ch; }
+.section-title{ font-size:clamp(2.1rem,4.6vw,3.6rem); max-width:22ch; letter-spacing:-.01em; }
 .section-lede{ font-size:1.1rem; color:var(--graphite); max-width:56ch; margin-top:1rem; }
 
 /* ---------------- Buttons ---------------- */
@@ -80,6 +80,8 @@ button{ font-family:inherit; cursor:pointer; }
   transition:background .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease), transform .2s var(--ease);
 }
 .btn:hover{ background:var(--ink); color:var(--white); transform:translateY(-2px); }
+.btn .arrow{ width:15px; height:9px; flex:none; transition:transform .35s var(--ease); }
+.btn:hover .arrow{ transform:translateX(4px); }
 .btn-solid{ background:var(--orange); border-color:var(--orange); color:var(--white); }
 .btn-solid:hover{ background:var(--orange-deep); border-color:var(--orange-deep); }
 .btn-light{ border-color:var(--white); color:var(--white); }
@@ -644,6 +646,12 @@ textarea{ resize:vertical; min-height:140px; }
 .footer-links{ display:flex; flex-direction:column; gap:.7rem; }
 .footer-links a{ font-size:.9rem; color:#cfc4b6; }
 .footer-links a:hover{ color:var(--orange); }
+.footer-wordmark{
+  font-family:var(--font-head); font-weight:600; text-transform:uppercase; letter-spacing:-.02em; line-height:.8;
+  font-size:clamp(2.6rem, 10.2vw, 10rem); color:transparent; -webkit-text-stroke:1px rgba(255,255,255,.12);
+  white-space:nowrap; user-select:none; margin:1rem 0 -.08em; text-align:center; overflow:hidden;
+}
+.footer-wordmark span{ -webkit-text-stroke:1px rgba(226,132,45,.4); }
 .footer-bottom{
   display:flex; justify-content:space-between; flex-wrap:wrap; gap:.6rem;
   padding:1.4rem 0; border-top:1px solid rgba(255,255,255,.1); font-size:.78rem; color:#8b8071;
