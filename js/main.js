@@ -239,15 +239,6 @@
         style.transform =
           "translate3d(0," + (dir * (1 - a) * 26).toFixed(2) + "px,0) scale(" +
           (0.986 + a * 0.014).toFixed(4) + ")";
-        // Quantised to half-pixel steps: a fresh radius every frame means a
-        // fresh filter render every frame, and at this size the steps are
-        // not visible anyway.
-        const blur = a > 0.985 ? 0 : Math.round((1 - a) * 3 * 2) / 2;
-        const filter = blur > 0 ? "blur(" + blur + "px)" : "none";
-        if (filter !== c.filter) {
-          c.filter = filter;
-          style.filter = filter;
-        }
       }
       return leadIndex;
     };
