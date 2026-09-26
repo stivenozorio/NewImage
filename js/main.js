@@ -270,29 +270,15 @@
     const SETTLE = 0.0015;
     let lastFrameAt = 0;
 
-    // The outro's own box is taller than one screen on purpose — the
-    // sticky media only releases over its last ~100vh (a `position:sticky`
-    // element unpins exactly as its container's remaining height drops
-    // below its own), so that release has to happen behind an already-
-    // solid outro background or the film visibly slides while unpinning.
-    // The film's pacing shouldn't stretch to fill that extra height, so it
-    // keeps running against a fixed 0.9-screen tail — matching how much of
-    // the outro is actual dissolve, not settle room — regardless of how
-    // tall the outro box needs to be for the release itself.
-    const FILM_TAIL = 0.9;
-
-    // The chapters only run for the hero; the film runs a bit past it,
-    // into the fixed tail above. Two progress values, one measurement —
-    // the wrapper and the hero share a top edge.
+    // The sticky media is scoped to the hero alone (see css/styles.css),
+    // so the film and the chapters now share the exact same range — one
+    // measurement covers both.
     const readProgress = () => {
       const scrolled = -cinema.getBoundingClientRect().top;
       const stageH = stage.offsetHeight;
-      const filmRange = hero.offsetHeight - stageH + stageH * FILM_TAIL;
       const heroRange = hero.offsetHeight - stageH;
-      return {
-        film: filmRange > 0 ? clamp(scrolled / filmRange, 0, 1) : 0,
-        chapter: heroRange > 0 ? clamp(scrolled / heroRange, 0, 1) : 0
-      };
+      const p = heroRange > 0 ? clamp(scrolled / heroRange, 0, 1) : 0;
+      return { film: p, chapter: p };
     };
 
     // The poster is frame one of the film, lock-up and all, so it keeps the

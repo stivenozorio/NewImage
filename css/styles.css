@@ -166,18 +166,17 @@ button{ font-family:inherit; cursor:pointer; }
    motion, save-data). `.is-cinema` upgrades it to the sticky,
    scroll-driven experience; JS adds that class only when safe.
    ============================================================ */
-/* The film runs behind the hero AND the philosophy line that follows it,
-   so the sticky media layer belongs to this wrapper rather than the hero. */
+/* The sticky media layer is scoped to the hero alone now — it used to
+   also span the "Our Philosophy" line after it, which meant that section
+   needed ~100svh of already-solid buffer for the sticky release to clear
+   invisibly (a `position:sticky` element releases over its own last
+   ~100vh, tied to its height, not something a shorter box can avoid).
+   That buffer read as a dead, unexplained gap rather than a pause, so
+   the philosophy line is now a plain section below, with the same
+   scroll-reveal every other section on the page uses — no sticky
+   hand-off to manage, nothing to keep in sync. */
 .cinema{
   --hero-track:520svh;
-  /* Taller than the dissolve itself needs (~45svh) on purpose: the sticky
-     media releases over its own last ~100svh regardless of this box's
-     height (see FILM_TAIL in main.js), so there has to be nearly that
-     much already-solid-cream room after the dissolve completes, or the
-     film visibly slides free mid-dissolve instead of a clean handoff.
-     Kept as tight as that allows — taller reads as slower to scroll
-     through, not smoother. */
-  --hero-outro:140svh;
   --hero-pan:20%;          /* object-position Y,  driven by JS  */
   --hero-pan-still:60%;
   --hero-zoom:1;           /* slow push, driven by JS           */
@@ -187,7 +186,7 @@ button{ font-family:inherit; cursor:pointer; }
   color:var(--hero-fg);
   isolation:isolate;
 }
-.hero-cinema{ position:relative; z-index:1; margin-top:-100vh; margin-top:-100dvh; }
+.hero-cinema{ position:relative; z-index:1; }
 .hero-stage{ position:relative; }
 
 /* ---- skip link ---- */
@@ -355,22 +354,15 @@ button{ font-family:inherit; cursor:pointer; }
    CINEMA MODE — enabled by JS
    ============================================================ */
 .is-cinema .hero-cinema{ height:var(--hero-track); }
-/* The philosophy line scrolls over the still-running film, then dissolves
-   into solid cream well before the box ends — the remaining height is
-   settle room for the sticky media's release, not more dissolve, so the
-   text sits in the dark band near the top rather than centered in the
-   whole (much taller) box. */
-.is-cinema .hero-outro{
-  position:relative; z-index:1;
-  min-height:var(--hero-outro);
-  padding-top:22vh;
-  background:linear-gradient(180deg,
-    rgba(10,9,8,0) 0%, rgba(10,9,8,.30) 8%, rgba(10,9,8,.78) 17%,
-    #1a1510 23%, #4a3f33 28%, #9c8a72 31%, var(--cream) 32%, var(--cream) 100%);
-}
+/* hero-media (the sticky video layer) is the first child of .hero-cinema
+   now and takes up its own 100vh in that box's normal flow. hero-stage
+   needs to sit on top of it from scroll position zero, not from 100vh
+   down, so it gets pulled back up by the same amount — the same trick
+   .hero-cinema itself used to need when hero-media was its own sibling. */
 .is-cinema .hero-stage{
   position:sticky; top:0;
   height:100svh; height:100dvh;
+  margin-top:-100vh; margin-top:-100dvh;
   overflow:clip;
 }
 .is-cinema .hero-chapters{ position:absolute; inset:0; margin:0; }
@@ -486,10 +478,10 @@ button{ font-family:inherit; cursor:pointer; }
   font-family:var(--font-head); text-transform:none; font-weight:500;
   font-size:clamp(1.6rem,3.6vw,2.6rem); line-height:1.4;
   max-width:20ch; margin:1.4rem auto 0; color:#f2ece3;
-  /* The cinema version of this text sits over a dissolve that fades from
-     dark to the page's own cream, not a fixed backdrop — a soft dark
-     shadow keeps it legible wherever that gradient lands under it,
-     instead of depending on pixel-perfect alignment between the two. */
+  /* This section's own background is a dark-to-cream gradient, so the
+     text's exact position over it can shift a little across breakpoints
+     and content changes — a soft dark shadow keeps it legible without
+     needing pixel-perfect alignment between the two. */
   text-shadow:0 2px 16px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.6);
 }
 .hero-outro-statement .orange{ color:var(--orange); }
