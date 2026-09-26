@@ -363,7 +363,7 @@ button{ font-family:inherit; cursor:pointer; }
 .is-cinema .hero-outro{
   position:relative; z-index:1;
   min-height:var(--hero-outro);
-  padding-top:32vh;
+  padding-top:22vh;
   background:linear-gradient(180deg,
     rgba(10,9,8,0) 0%, rgba(10,9,8,.30) 8%, rgba(10,9,8,.78) 17%,
     #1a1510 23%, #4a3f33 28%, #9c8a72 31%, var(--cream) 32%, var(--cream) 100%);
@@ -480,12 +480,17 @@ button{ font-family:inherit; cursor:pointer; }
   padding:clamp(6rem,14vh,10rem) 0 clamp(6rem,13vh,9rem);
   background:linear-gradient(180deg, var(--void) 0%, #0d0b09 44%, #241d16 70%, #7d6c58 90%, var(--cream) 100%);
 }
-.hero-outro .eyebrow{ color:var(--gold); justify-content:center; }
+.hero-outro .eyebrow{ color:var(--gold); justify-content:center; text-shadow:0 2px 10px rgba(0,0,0,.5); }
 .hero-outro .eyebrow::before{ background:var(--orange); }
 .hero-outro-statement{
   font-family:var(--font-head); text-transform:none; font-weight:500;
   font-size:clamp(1.6rem,3.6vw,2.6rem); line-height:1.4;
   max-width:20ch; margin:1.4rem auto 0; color:#f2ece3;
+  /* The cinema version of this text sits over a dissolve that fades from
+     dark to the page's own cream, not a fixed backdrop — a soft dark
+     shadow keeps it legible wherever that gradient lands under it,
+     instead of depending on pixel-perfect alignment between the two. */
+  text-shadow:0 2px 16px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.6);
 }
 .hero-outro-statement .orange{ color:var(--orange); }
 
