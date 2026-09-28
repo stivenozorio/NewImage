@@ -531,6 +531,10 @@ button{ font-family:inherit; cursor:pointer; }
 .process-step h4{ font-size:1.05rem; margin-bottom:.5rem; }
 .process-step p{ font-size:.88rem; color:var(--graphite); }
 
+.area-band{ position:relative; background-size:cover; background-position:center; color:var(--white); overflow:clip; }
+.area-band::before{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,9,8,.6) 0%, rgba(10,9,8,.8) 100%); }
+.area-band .container{ position:relative; z-index:1; }
+
 /* ---------------- Gallery ---------------- */
 .masonry{
   columns:3 280px; column-gap:1.1rem;
