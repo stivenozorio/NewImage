@@ -289,13 +289,24 @@
   </div>
 </footer>
 
-<button class="ai-fab" type="button" aria-expanded="false" aria-controls="ai-fab-panel" aria-label="What's on this page">NI</button>
+<button class="ai-fab" type="button" aria-expanded="false" aria-controls="ai-fab-panel" aria-label="Chat with New Image — quick answers">NI</button>
 <div class="ai-fab-panel" id="ai-fab-panel" hidden>
   <div class="ai-fab-panel-head">
-    <p class="ai-fab-panel-title"><span>NI</span> — On this page</p>
+    <p class="ai-fab-panel-title"><span>NI</span> — Quick Help</p>
     <button class="ai-fab-close" type="button" aria-label="Close">&times;</button>
   </div>
-  <ul class="ai-fab-list"></ul>
+  <div class="ai-fab-messages" data-ai-messages aria-live="polite"></div>
+  <div class="ai-fab-chips" data-ai-chips hidden></div>
+  <form class="ai-fab-form" data-ai-form>
+    <input type="text" class="ai-fab-input" data-ai-input placeholder="Ask about services, pricing, contact…" aria-label="Ask a question" autocomplete="off" />
+    <button type="submit" class="ai-fab-send" aria-label="Send">
+      <svg viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 5h15M11 1l4 4-4 4"/></svg>
+    </button>
+  </form>
+  <details class="ai-fab-onpage">
+    <summary>Jump to a section on this page</summary>
+    <ul class="ai-fab-list"></ul>
+  </details>
 </div>
 
 <script src="/js/main.js?v=3"></script>

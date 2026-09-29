@@ -1126,9 +1126,11 @@ textarea{ resize:vertical; min-height:140px; }
 }
 
 /* ============================================================
-   PAGE ASSISTANT — a floating "NI" button that lists this page's
-   own sections and scrolls to whichever one is picked. Entirely
-   client-side: no chat, no backend, just quick in-page navigation.
+   PAGE ASSISTANT — a floating "NI" button opening a small quick-help
+   chat. Entirely client-side: replies are keyword-matched against a
+   fixed list of real facts about the business (no backend, no real
+   AI — a static site has nowhere safe to hold an API key). It also
+   still lists this page's own sections as a "jump to" shortcut.
    ============================================================ */
 .ai-fab{
   position:fixed; right:1.5rem; bottom:1.5rem; z-index:1400;
@@ -1145,7 +1147,7 @@ textarea{ resize:vertical; min-height:140px; }
 
 .ai-fab-panel{
   position:fixed; right:1.5rem; bottom:5.4rem; z-index:1399;
-  width:min(320px, calc(100vw - 2.5rem)); max-height:min(60vh, 420px);
+  width:min(340px, calc(100vw - 2.5rem)); max-height:min(78vh, 560px);
   display:flex; flex-direction:column; overflow:hidden;
   background:var(--cream); border:1px solid var(--line); border-radius:10px;
   box-shadow:0 20px 48px rgba(20,18,16,.28);
@@ -1167,18 +1169,78 @@ textarea{ resize:vertical; min-height:140px; }
   line-height:1; padding:.1rem .3rem; border-radius:4px;
 }
 .ai-fab-close:hover{ color:var(--white); }
+
+/* ---- chat thread ---- */
+.ai-fab-messages{
+  flex:1 1 auto; min-height:180px; overflow-y:auto;
+  padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.65rem;
+}
+.ai-msg{
+  max-width:86%; padding:.6rem .8rem; border-radius:10px;
+  font-size:.88rem; line-height:1.45;
+}
+.ai-msg a{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+.ai-msg.is-bot{
+  align-self:flex-start; background:var(--white); border:1px solid var(--line);
+  color:var(--ink); border-bottom-left-radius:2px;
+}
+.ai-msg.is-user{
+  align-self:flex-end; background:var(--orange); color:var(--white);
+  border-bottom-right-radius:2px;
+}
+
+.ai-fab-chips{
+  display:flex; flex-wrap:wrap; gap:.45rem;
+  padding:0 1.1rem .8rem; flex:0 0 auto;
+}
+.ai-fab-chips button{
+  border:1px solid var(--orange); background:none; color:var(--orange-deep);
+  border-radius:999px; padding:.4rem .8rem; font-size:.78rem; font-weight:600;
+  transition:background .2s var(--ease), color .2s var(--ease);
+}
+.ai-fab-chips button:hover{ background:var(--orange); color:var(--white); }
+
+.ai-fab-form{
+  display:flex; gap:.5rem; padding:.8rem 1.1rem;
+  border-top:1px solid var(--line); flex:0 0 auto;
+}
+.ai-fab-input{
+  flex:1 1 auto; min-width:0; border:1px solid var(--line); border-radius:8px;
+  padding:.6rem .75rem; font-family:var(--font-body); font-size:.88rem;
+  background:var(--white); color:var(--ink);
+}
+.ai-fab-input:focus-visible{ outline:2px solid var(--orange); outline-offset:1px; }
+.ai-fab-send{
+  flex:0 0 auto; width:38px; height:38px; border-radius:8px; border:0;
+  background:var(--orange); color:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s var(--ease);
+}
+.ai-fab-send:hover{ background:var(--orange-deep); }
+.ai-fab-send svg{ width:16px; height:10px; }
+
+/* ---- on-page jump list, tucked under a native disclosure ---- */
+.ai-fab-onpage{ flex:0 0 auto; border-top:1px solid var(--line); }
+.ai-fab-onpage summary{
+  cursor:pointer; list-style:none; padding:.7rem 1.1rem;
+  font-family:var(--font-head); font-weight:600; font-size:.72rem;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--graphite);
+}
+.ai-fab-onpage summary::-webkit-details-marker{ display:none; }
+.ai-fab-onpage summary::after{ content:'+'; float:right; }
+.ai-fab-onpage[open] summary::after{ content:'\2212'; }
 .ai-fab-list{
-  list-style:none; margin:0; padding:.5rem; overflow-y:auto;
+  list-style:none; margin:0; padding:0 .5rem .5rem; max-height:180px; overflow-y:auto;
 }
 .ai-fab-list li + li{ margin-top:.15rem; }
 .ai-fab-list button{
   display:block; width:100%; text-align:left; border:0; background:none;
-  padding:.7rem .75rem; border-radius:6px;
-  font-family:var(--font-body); font-size:.88rem; color:var(--ink);
+  padding:.6rem .75rem; border-radius:6px;
+  font-family:var(--font-body); font-size:.86rem; color:var(--ink);
   transition:background .2s var(--ease);
 }
 .ai-fab-list button:hover, .ai-fab-list button:focus-visible{ background:var(--cream-deep); }
-.ai-fab-empty{ padding:1rem 1.1rem; font-size:.85rem; color:var(--graphite); }
+.ai-fab-empty{ padding:0 .75rem .75rem; font-size:.85rem; color:var(--graphite); }
 
 @media (max-width:560px){
   .ai-fab{ right:1rem; bottom:1rem; width:52px; height:52px; font-size:.92rem; }

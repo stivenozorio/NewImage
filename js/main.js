@@ -653,8 +653,12 @@
   });
 
   /* ============================================================
-     Page assistant — reads the page's own headings (no fixed list to
-     keep in sync per page) and lists them as quick jump-to links.
+     Page assistant — a small client-side "quick help" chat. There is
+     no backend and no real AI behind it (a public static site has
+     nowhere safe to hold an API key), so replies are keyword-matched
+     against a short list of real facts about the business. It also
+     still reads the page's own headings for a "jump to a section"
+     shortcut, same as before.
      ============================================================ */
   const aiFab = document.querySelector(".ai-fab");
   const aiPanel = document.querySelector(".ai-fab-panel");
@@ -689,12 +693,116 @@
       list.appendChild(p);
     }
 
+    /* ---- quick-help chat ------------------------------------------- */
+    const messages = aiPanel.querySelector("[data-ai-messages]");
+    const chips = aiPanel.querySelector("[data-ai-chips]");
+    const form = aiPanel.querySelector("[data-ai-form]");
+    const input = aiPanel.querySelector("[data-ai-input]");
+
+    const KB = [
+      { test: /\b(hi|hello|hey|hola)\b/i,
+        reply: "Hi! I can help with our services, a free estimate, our process, or how to reach us — ask away." },
+      { test: /\bkitchen/i,
+        reply: 'We design and build custom kitchens, from cabinetry to full layouts. <a href="/services/kitchen/">See our kitchen remodeling page</a>.' },
+      { test: /\b(bathroom|shower|bath)\b/i,
+        reply: 'We remodel bathrooms into a tranquil, functional retreat. <a href="/services/bathroom/">See our bathroom remodeling page</a>.' },
+      { test: /\bcloset/i,
+        reply: 'Custom, organized closet builds tailored to your space. <a href="/services/closets/">See our closets page</a>.' },
+      { test: /\bfloor/i,
+        reply: 'We install a range of flooring solutions tailored to your home. <a href="/services/floor/">See our flooring page</a>.' },
+      { test: /\bpaint/i,
+        reply: 'Interior and exterior painting, finished with care. <a href="/services/painting/">See our painting page</a>.' },
+      { test: /\b(exterior|patio|pool ?deck|outdoor)\b/i,
+        reply: 'Patios, pool decks and outdoor spaces built to last. <a href="/services/exterior-work/">See our exterior work page</a>.' },
+      { test: /\b(wall unit|shelving|built-?in)\b/i,
+        reply: 'Custom wall units for storage and display, built to fit your walls. <a href="/services/custom-wall-units/">See our custom wall units page</a>.' },
+      { test: /\bwhy\b|different|advantage|better than/i,
+        reply: 'A few reasons clients choose us: one team from design through construction, a process built around how you actually live, and deep local expertise across South Florida &amp; the Treasure Coast. <a href="/#why">See why New Image</a>.' },
+      { test: /\bservice|remodel|renovat|build\b/i,
+        reply: 'We handle kitchens, bathrooms, closets, flooring, painting, exterior work, and custom wall units — design and construction under one roof. <a href="/services/">See all services</a>.' },
+      { test: /\bestimate|quote|price|cost|budget|how much/i,
+        reply: 'Estimates are free and no-obligation — just a conversation about your project. <a href="/contact/">Schedule your free estimate</a>.' },
+      { test: /\bwhatsapp\b/i,
+        reply: 'Message us any time on <a href="https://wa.me/19546874949" target="_blank" rel="noopener">WhatsApp</a>.' },
+      { test: /\bcontact|phone|call|email|reach\b/i,
+        reply: 'You can reach us at <a href="tel:+19546874949">(954) 687-4949</a>, on <a href="https://wa.me/19546874949" target="_blank" rel="noopener">WhatsApp</a>, or at <a href="mailto:info@newimageremodeling.co">info@newimageremodeling.co</a>.' },
+      { test: /\barea|location|where|serve|vero|key west|south florida|treasure coast/i,
+        reply: 'We proudly serve South Florida &amp; the Treasure Coast, from Vero Beach to Key West. <a href="/#area">See our coverage area</a>.' },
+      { test: /\bprocess|how (does|do) (it|you)|concept|timeline|step/i,
+        reply: 'Our process: Concept (a conversation and a clear design), Build (our own crews, start to finish), Transform (a final walkthrough and a space ready to live in). <a href="/#process">See our process</a>.' },
+      { test: /\bwork|portfolio|photo|gallery|project/i,
+        reply: 'Take a look at our recent remodels. <a href="/work/">View our work</a>.' },
+      { test: /\babout|who are you|company|team/i,
+        reply: 'New Image Construction &amp; Remodeling brings your remodeling dream to life, from concept to creation. <a href="/about/">Learn more about us</a>.' },
+      { test: /\breview|testimonial/i,
+        reply: 'You can see what clients say about us on <a href="https://www.instagram.com/newimageconstruction_remodel/" target="_blank" rel="noopener">Instagram</a> and <a href="https://www.facebook.com/profile.php?id=100067156015493" target="_blank" rel="noopener">Facebook</a>.' },
+      { test: /\bthank/i,
+        reply: "You're welcome! Anything else I can help with?" },
+    ];
+    const FALLBACK = "I don't have a canned answer for that yet, but I can help with our services, a free estimate, our process, or how to reach us — or just call us at (954) 687-4949.";
+    const DEFAULT_CHIPS = ["Services", "Free Estimate", "Our Process", "Contact"];
+
+    const addMessage = (text, who) => {
+      if (!messages) return;
+      const div = document.createElement("div");
+      div.className = "ai-msg is-" + who;
+      if (who === "bot") {
+        div.innerHTML = text; // app-authored, fixed strings only
+      } else {
+        div.textContent = text; // visitor input — never parsed as HTML
+      }
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    };
+
+    const setChips = (labels) => {
+      if (!chips) return;
+      chips.innerHTML = "";
+      chips.hidden = !labels || !labels.length;
+      (labels || []).forEach((label) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = label;
+        btn.addEventListener("click", () => ask(label));
+        chips.appendChild(btn);
+      });
+    };
+
+    const reply = (text) => {
+      const hit = KB.find((entry) => entry.test.test(text));
+      window.setTimeout(() => {
+        addMessage(hit ? hit.reply : FALLBACK, "bot");
+        setChips(hit ? null : DEFAULT_CHIPS);
+      }, 260);
+    };
+
+    const ask = (text) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      addMessage(trimmed, "user");
+      setChips(null);
+      reply(trimmed);
+    };
+
+    if (form && input) {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const value = input.value;
+        input.value = "";
+        ask(value);
+      });
+    }
+
+    if (messages && !messages.childElementCount) {
+      addMessage("Hi! I can help with our services, a free estimate, our process, or how to reach us. Ask me anything, or tap a topic below.", "bot");
+      setChips(DEFAULT_CHIPS);
+    }
+
     const setOpen = (open) => {
       aiFab.setAttribute("aria-expanded", String(open));
       aiPanel.hidden = !open;
       if (open) {
-        const first = list.querySelector("button");
-        if (first) first.focus();
+        if (input) input.focus();
       } else {
         aiFab.focus();
       }
@@ -706,8 +814,13 @@
       if (event.key === "Escape" && aiFab.getAttribute("aria-expanded") === "true") setOpen(false);
     });
     document.addEventListener("click", (event) => {
+      // composedPath (not aiPanel.contains) because a chip's own click
+      // handler clears the chip list — including the clicked chip —
+      // before this bubbles up, so the removed node would otherwise
+      // read as "outside" the panel and close it out from under itself.
+      const path = event.composedPath();
       if (aiFab.getAttribute("aria-expanded") === "true" &&
-          !aiPanel.contains(event.target) && event.target !== aiFab) {
+          !path.includes(aiPanel) && event.target !== aiFab) {
         setOpen(false);
       }
     });
