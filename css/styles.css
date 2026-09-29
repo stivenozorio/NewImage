@@ -511,16 +511,20 @@ button{ font-family:inherit; cursor:pointer; }
 @media (max-width:620px){ .cols-2,.cols-3,.cols-4{ grid-template-columns:1fr; } }
 
 .service-card{
-  display:block;
+  position:relative; display:block; overflow:hidden;
   background:var(--white); border:1px solid var(--line); padding:2.2rem 1.8rem;
   transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
 }
-.service-card:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -20px rgba(20,18,16,.25); border-color:var(--orange); }
-.service-card .num{
-  display:inline-block; font-family:var(--font-head); font-size:.9rem; color:var(--orange); font-weight:600;
-  transition:transform .3s var(--ease), color .3s var(--ease);
+.service-card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 20px 40px -20px rgba(20,18,16,.25), 0 0 32px -6px rgba(226,132,45,.4);
+  border-color:var(--orange);
 }
-.service-card:hover .num{ color:var(--orange-deep); transform:scale(1.2); }
+.service-card .num{
+  position:relative; display:inline-block; font-family:var(--font-head); font-size:.9rem; color:var(--orange); font-weight:600;
+  transition:transform .3s var(--ease), color .3s var(--ease), text-shadow .3s var(--ease);
+}
+.service-card:hover .num{ color:var(--orange-deep); transform:scale(1.2); text-shadow:0 0 14px rgba(226,132,45,.55); }
 .service-card h3{ font-size:1.2rem; margin:.7rem 0 .6rem; }
 .service-card p{ color:var(--graphite); font-size:.95rem; }
 
@@ -534,19 +538,40 @@ button{ font-family:inherit; cursor:pointer; }
 /* ---------------- Process steps ---------------- */
 .process-list{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.5rem; margin-top:3rem; }
 .process-step{
-  position:relative; padding:1.8rem 1.4rem; background:var(--white); border:1px solid var(--line);
+  position:relative; overflow:hidden; padding:1.8rem 1.4rem; background:var(--white); border:1px solid var(--line);
   transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
 }
-.process-step:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -20px rgba(20,18,16,.25); border-color:var(--orange); }
+.process-step:hover{
+  transform:translateY(-6px);
+  box-shadow:0 20px 40px -20px rgba(20,18,16,.25), 0 0 32px -6px rgba(226,132,45,.4);
+  border-color:var(--orange);
+}
 .process-step .step-num{
-  display:inline-flex; align-items:center; justify-content:center;
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
   width:38px; height:38px; border-radius:50%; background:var(--ink); color:var(--white);
   font-family:var(--font-head); font-weight:600; margin-bottom:1rem;
-  transition:background .3s var(--ease), transform .3s var(--ease);
+  transition:background .3s var(--ease), transform .3s var(--ease), box-shadow .3s var(--ease);
 }
-.process-step:hover .step-num{ background:var(--orange); transform:scale(1.1); }
+.process-step:hover .step-num{ background:var(--orange); transform:scale(1.1); box-shadow:0 0 0 6px rgba(226,132,45,.18); }
 .process-step h4{ font-size:1.05rem; margin-bottom:.5rem; }
 .process-step p{ font-size:.88rem; color:var(--graphite); }
+
+/* A slim accent bar across the top of every card, brightening on hover,
+   plus a soft diagonal shine that sweeps through on hover — the flat
+   white cards read as "basic" without some light of their own. */
+.service-card::before, .process-step::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--orange) 0%, var(--gold) 100%);
+  opacity:.5; transition:opacity .3s var(--ease), height .3s var(--ease);
+}
+.service-card:hover::before, .process-step:hover::before{ opacity:1; height:4px; }
+.service-card::after, .process-step::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 42%, rgba(255,255,255,.5) 50%, transparent 58%);
+  transform:translateX(-130%);
+  transition:transform .8s var(--ease);
+}
+.service-card:hover::after, .process-step:hover::after{ transform:translateX(130%); }
 
 .area-band{ position:relative; background-size:cover; background-position:center; color:var(--white); overflow:clip; }
 .area-band::before{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,9,8,.6) 0%, rgba(10,9,8,.8) 100%); }
