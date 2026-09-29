@@ -498,6 +498,8 @@ button{ font-family:inherit; cursor:pointer; }
 [data-animate-delay="4"]{ transition-delay:.32s; }
 @media (prefers-reduced-motion: reduce){
   [data-animate]{ opacity:1; transform:none; transition:none; }
+  .service-card[data-animate],
+  .process-step[data-animate]{ transform:none; }
 }
 
 /* ---------------- Cards / Grids ---------------- */
@@ -514,20 +516,35 @@ button{ font-family:inherit; cursor:pointer; }
   transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
 }
 .service-card:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -20px rgba(20,18,16,.25); border-color:var(--orange); }
-.service-card .num{ font-family:var(--font-head); font-size:.9rem; color:var(--orange); font-weight:600; }
+.service-card .num{
+  display:inline-block; font-family:var(--font-head); font-size:.9rem; color:var(--orange); font-weight:600;
+  transition:transform .3s var(--ease), color .3s var(--ease);
+}
+.service-card:hover .num{ color:var(--orange-deep); transform:scale(1.2); }
 .service-card h3{ font-size:1.2rem; margin:.7rem 0 .6rem; }
 .service-card p{ color:var(--graphite); font-size:.95rem; }
+
+/* Cards that fly in on scroll (rather than just fade+rise) get a touch of
+   scale too, so the "landing" reads as more alive on the larger grids. */
+.service-card[data-animate],
+.process-step[data-animate]{ transform:translateY(28px) scale(.96); }
+.service-card[data-animate].is-visible,
+.process-step[data-animate].is-visible{ transform:none; }
 
 /* ---------------- Process steps ---------------- */
 .process-list{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.5rem; margin-top:3rem; }
 .process-step{
   position:relative; padding:1.8rem 1.4rem; background:var(--white); border:1px solid var(--line);
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
 }
+.process-step:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -20px rgba(20,18,16,.25); border-color:var(--orange); }
 .process-step .step-num{
   display:inline-flex; align-items:center; justify-content:center;
   width:38px; height:38px; border-radius:50%; background:var(--ink); color:var(--white);
   font-family:var(--font-head); font-weight:600; margin-bottom:1rem;
+  transition:background .3s var(--ease), transform .3s var(--ease);
 }
+.process-step:hover .step-num{ background:var(--orange); transform:scale(1.1); }
 .process-step h4{ font-size:1.05rem; margin-bottom:.5rem; }
 .process-step p{ font-size:.88rem; color:var(--graphite); }
 
