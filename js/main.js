@@ -633,17 +633,40 @@
     });
   }
 
-  /* ---------- Contact form (client-side only; no credentials here) ---------- */
+  /* ---------- Contact form ----------
+     No backend on a static site, so this used to just tell the visitor
+     "this form isn't wired to send yet" and discard whatever they
+     typed — meaning every lead who filled it out and hit Send got a
+     polite dead end instead of reaching the business. Routes through
+     WhatsApp instead, the same number already used for the header's
+     "WhatsApp Us" button and the page assistant's replies (see
+     wa.me/19546874949 elsewhere in this file and in index.html),
+     rather than standing up a form-backend service this fix doesn't
+     need. */
   const contactForm = document.getElementById("contact-form");
   if (contactForm) {
     contactForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const status = document.getElementById("contact-form-status");
+      const data = new FormData(contactForm);
+      const name = (data.get("name") || "").toString().trim();
+      const phone = (data.get("phone") || "").toString().trim();
+      const email = (data.get("email") || "").toString().trim();
+      const message = (data.get("message") || "").toString().trim();
+      const lines = [
+        "Hi New Image! New contact form submission:",
+        `Name: ${name}`,
+        phone ? `Phone: ${phone}` : null,
+        `Email: ${email}`,
+        message ? `Message: ${message}` : null,
+      ].filter(Boolean);
+      const waUrl = `https://wa.me/19546874949?text=${encodeURIComponent(lines.join("\n"))}`;
+      window.open(waUrl, "_blank", "noopener");
       if (status) {
-        status.textContent =
-          "Thanks — this form isn't wired to send yet. Please call or email us directly for now.";
-        status.className = "form-status is-error";
+        status.textContent = "Opened in WhatsApp — tap send there to reach us.";
+        status.className = "form-status is-success";
       }
+      contactForm.reset();
     });
   }
 
